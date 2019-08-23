@@ -1,9 +1,8 @@
 import Phaser, { Scene } from 'phaser';
-import Level from './Level';
 
 let onLadder = false;
 
-class Scene1 extends Scene {
+class Level extends Scene {
   constructor() {
     super('scene1'); // key: scene1
     this.score = 0;
@@ -39,14 +38,12 @@ class Scene1 extends Scene {
     this.cameras.main.setBounds(0, 0, 1024, 2048);
     this.cameras.main.startFollow(this.player, true, 0.5, 0.5, 0, 180);
 
-    this.scoreText = this.add.text(16, 50, 'score: 0', {
+    this.scoreText = this.add.text(16, 200, 'score: 0', {
       fontSize: '32px', fill: '#000', wordWrap: true, wordWrapWidth: this.player.width, align: 'center',
     });
-    this.scoreText.setScrollFactor(0);
     this.gameOverText = this.add.text(400, 300, 'Game Over', { fontSize: '64px', fill: '#000' });
     this.gameOverText.setOrigin(0.5);
     this.gameOverText.visible = false;
-    this.gameOverText.setScrollFactor(0);
   }
 
   createBackground() {
@@ -165,10 +162,9 @@ class Scene1 extends Scene {
     this.anims.pauseAll();
     this.physics.pause();
     this.squirrelTween.stop();
-    this.cameras.main.shake(100, 0.01);
     this.gameOver = true;
     this.gameOverText.visible = true;
-
+    this.cameras.main.shake(100, 0.3);
     // this.scene.restart();
     // this.input.on('pointerdown', () => this.scene.start('preload'));
   }
@@ -238,4 +234,4 @@ class Scene1 extends Scene {
   }
 }
 
-export default Scene1;
+export default Level;

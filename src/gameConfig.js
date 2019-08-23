@@ -8,12 +8,13 @@ const gameConfig = {
   parent: 'game-container',
   width: 800,
   height: 600,
-  scene: [PreloadScene, Scene1],
+  // PreloadScene
+  scene: [Scene1],
   physics: {
     default: 'arcade',
     arcade: {
-      // gravity: { y: 300 },
-      debug: false,
+      gravity: { y: 300 },
+      debug: true,
     },
   },
 };
