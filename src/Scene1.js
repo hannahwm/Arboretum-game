@@ -24,6 +24,7 @@ class Scene1 extends Scene {
     this.load.image('platform', 'interactive/2019/08/phaser-game/assets/platform.png');
     this.load.image('ladder', 'interactive/2019/08/phaser-game/assets/ladder.png');
     this.load.image('nut', 'interactive/2019/08/phaser-game/assets/nut.png');
+    this.load.image('books', 'interactive/2019/08/phaser-game/assets/books.png');
     this.load.spritesheet('dude',
       'interactive/2019/08/phaser-game/assets/dude.png',
       { frameWidth: 32, frameHeight: 48 });
@@ -38,6 +39,7 @@ class Scene1 extends Scene {
     this.createLadders();
     this.createPlayer();
     this.createEnemies();
+    this.createBooks();
     this.createHealthBar();
     this.createBackground();
     this.createCursor();
@@ -59,9 +61,10 @@ class Scene1 extends Scene {
   }
 
   createHealthBar() {
-    this.add.rectangle(700, 40, 124, 24, '0x000000').setDepth(5);
+    this.add.rectangle(700, 40, 124, 24, '0x000000').setDepth(5).setScrollFactor(0);
     this.healthBar = this.add.rectangle(700, 40, 120, 20, '0xcc0000');
     this.healthBar.setDepth(6);
+    this.healthBar.setScrollFactor(0);
   }
 
   createBackground() {
@@ -105,8 +108,8 @@ class Scene1 extends Scene {
 
   createPlatforms() {
     this.platforms = this.physics.add.staticGroup();
-    this.platforms.create(480, 480, 'platform');
-    this.platforms.setDepth(4);
+    this.platforms.create(580, 480, 'platform');
+    this.platforms.setDepth(5);
 
     this.platforms.children.iterate((child) => {
       child.setSize(160, 33);
@@ -117,7 +120,7 @@ class Scene1 extends Scene {
   createLadders() {
     this.ladders = this.physics.add.staticGroup();
     this.ladders.create(300, 450, 'ladder');
-    this.ladders.setDepth(3);
+    this.ladders.setDepth(4);
 
     this.ladders.children.iterate((child) => {
       child.setSize(40, 250);
@@ -132,7 +135,7 @@ class Scene1 extends Scene {
     this.player.setOffset(3, 7);
     this.player.setBounce(0.2);
     this.player.setGravityY(300);
-    this.player.setDepth(3);
+    this.player.setDepth(4);
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.platforms);
     this.physics.add.collider(this.player, this.ground);
@@ -168,9 +171,9 @@ class Scene1 extends Scene {
       repeat: -1,
     });
 
-    global.enemy = this.physics.add.sprite(420, 440, 'squirrel');
+    global.enemy = this.physics.add.sprite(520, 440, 'squirrel');
     global.enemy.anims.play('squirrel');
-    global.enemy.setDepth(3);
+    global.enemy.setDepth(4);
     global.enemy.setGravityY(300);
 
     this.physics.add.collider(this.player, global.enemy, this.touchEnemy, null, this);
@@ -178,7 +181,7 @@ class Scene1 extends Scene {
 
     this.squirrelTween = this.tweens.add({
       targets: global.enemy,
-      x: 540,
+      x: 640,
       ease: 'Power0',
       duration: 3000,
       flipX: true,
@@ -192,7 +195,7 @@ class Scene1 extends Scene {
         this.nut = this.physics.add.image(curX, curY, 'nut');
         this.nut.setBounce(1);
         this.nut.setDepth(5);
-        this.nut.setVelocityY(120).setVelocityX(-210);
+        this.nut.setVelocityY(80).setVelocityX(-350);
         this.physics.add.collider(this.player, this.nut, this.hitNut, null, this);
       },
     });
@@ -200,6 +203,34 @@ class Scene1 extends Scene {
 
   createCursor() {
     this.cursors = this.input.keyboard.createCursorKeys();
+  }
+
+  createBooks() {
+    this.books = this.physics.add.group({
+      key: 'books',
+      repeat: 3,
+      setXY: { x: 550, y: 300, stepX: 400 },
+    });
+
+    this.books.children.iterate((child) => {
+      child.setDepth(3);
+    });
+
+    this.physics.add.collider(this.books, this.platforms);
+    this.physics.add.overlap(this.player, this.books, this.collectBooks, null, this);
+  }
+
+  collectBooks(player, books) {
+    books.disableBody(true, true);
+
+    this.score += 10;
+    this.scoreText.setText(`Score: ${this.score}`);
+
+    if (this.books.countActive(true) === 0) {
+      this.books.children.iterate((child) => {
+        child.enableBody(true, child.x, 0, true, true);
+      });
+    }
   }
 
   createJumpButton() {
@@ -232,39 +263,28 @@ class Scene1 extends Scene {
   }
 
   touchEnemy(player, enemy) {
-    this.healthBar.setSize(0, 20);
-    player.setTint(0xff0000);
-    player.anims.play('turn');
-    this.anims.pauseAll();
-    this.physics.pause();
-    this.squirrelTween.stop();
-    this.cameras.main.shake(100, 0.01);
-    this.gameOver = true;
-    this.gameOverText.visible = true;
+
+    if (player.y < enemy.y) {
+      enemy.body.velocity.x = 0;
+      enemy.y += 20;
+      // enemy.destroy();
+      this.squirrelTween.stop();
+      player.y -= 30;
+    } else {
+      this.healthBar.setSize(0, 20);
+      player.setTint(0xff0000);
+      player.anims.play('turn');
+      this.anims.pauseAll();
+      this.physics.pause();
+      this.squirrelTween.stop();
+      this.cameras.main.shake(100, 0.01);
+      this.gameOver = true;
+      this.gameOverText.visible = true;
+    }
 
     // this.scene.restart();
     // this.input.on('pointerdown', () => this.scene.start('preload'));
   }
-
-  // createNuts() {
-  //   // , this.hitBomb, null, this
-  //   global.nuts = this.physics.add.group();
-  //   this.physics.add.collider(this.nuts, this.platforms);
-  //
-  //   global.nutParticles = this.add.particles('nut');
-  //   global.nutParticles.setDepth(5);
-  //   this.physics.add.collider(this.player, global.nutParticles);
-  //
-  //   global.nutEmitter = global.nutParticles.createEmitter({
-  //     lifespan: 2000,
-  //     speedX: -50,
-  //     speedY: 10,
-  //     gravityX: -200,
-  //     gravityY: 150,
-  //     on: false,
-  //   });
-  //
-  // }
 
   // ========================================================
   // Update
@@ -275,12 +295,12 @@ class Scene1 extends Scene {
     }
     // console.log(`update on ladder ${onLadder}`);
     if (this.cursors.left.isDown) {
-      this.player.setVelocityX(-160);
+      this.player.setVelocityX(-100);
       this.player.x -= 2.5;
 
       this.player.anims.play('left', true);
     } else if (this.cursors.right.isDown) {
-      this.player.setVelocityX(160);
+      this.player.setVelocityX(100);
       this.player.x += 2.5;
 
       this.player.anims.play('right', true);
@@ -293,13 +313,13 @@ class Scene1 extends Scene {
     if (this.cursors.up.isDown && onLadder === true) {
       this.player.setGravityY(0);
       this.player.anims.play('turn', true);
-      this.player.setVelocityY(-160);
+      this.player.setVelocityY(-100);
       // console.log('not climbing');
       onLadder = false;
     } else if (this.cursors.down.isDown && onLadder === true) {
       this.player.setGravityY(0);
       this.player.anims.play('turn', true);
-      this.player.setVelocityY(160);
+      this.player.setVelocityY(100);
       onLadder = false;
     } else {
       if (onLadder === true) {
