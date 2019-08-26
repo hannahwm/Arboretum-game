@@ -3,6 +3,7 @@ import Level from './Level';
 import gameConfig from './gameConfig';
 
 let onLadder = false;
+let colliderActivated = true;
 
 const global = {}
 
@@ -37,17 +38,16 @@ class Scene1 extends Scene {
     this.createLadders();
     this.createPlayer();
     this.createEnemies();
+    this.createHealthBar();
     this.createBackground();
     this.createCursor();
     this.createJumpButton();
-    this.createNuts();
-    this.throwNut();
     this.cameras.main.setBounds(0, 0, this.map.width, this.map.height);
     this.physics.world.setBounds(0, 0, this.map.getBounds().width,
       this.map.height + this.player.height);
     this.cameras.main.startFollow(this.player, true, 0.5, 0.5, 0, 180);
 
-    this.scoreText = this.add.text(16, 50, 'score: 0', {
+    this.scoreText = this.add.text(16, 20, 'score: 0', {
       fontSize: '32px', fill: '#000', wordWrap: true, wordWrapWidth: this.player.width, align: 'center',
     });
     this.scoreText.setScrollFactor(0);
@@ -56,6 +56,12 @@ class Scene1 extends Scene {
     this.gameOverText.visible = false;
     this.gameOverText.setScrollFactor(0);
     this.gameOverText.setDepth(5);
+  }
+
+  createHealthBar() {
+    this.add.rectangle(700, 40, 124, 24, '0x000000').setDepth(5);
+    this.healthBar = this.add.rectangle(700, 40, 120, 20, '0xcc0000');
+    this.healthBar.setDepth(6);
   }
 
   createBackground() {
@@ -110,7 +116,7 @@ class Scene1 extends Scene {
 
   createLadders() {
     this.ladders = this.physics.add.staticGroup();
-    this.ladders.create(300, 460, 'ladder');
+    this.ladders.create(300, 450, 'ladder');
     this.ladders.setDepth(3);
 
     this.ladders.children.iterate((child) => {
@@ -162,23 +168,33 @@ class Scene1 extends Scene {
       repeat: -1,
     });
 
-    this.enemy = this.physics.add.sprite(420, 440, 'squirrel');
-    this.enemy.anims.play('squirrel');
-    this.enemy.setDepth(3);
-    this.enemy.setGravityY(300);
+    global.enemy = this.physics.add.sprite(420, 440, 'squirrel');
+    global.enemy.anims.play('squirrel');
+    global.enemy.setDepth(3);
+    global.enemy.setGravityY(300);
 
-    this.physics.add.collider(this.player, this.enemy, this.touchEnemy, null, this);
-    this.physics.add.collider(this.enemy, this.platforms);
+    this.physics.add.collider(this.player, global.enemy, this.touchEnemy, null, this);
+    this.physics.add.collider(global.enemy, this.platforms);
 
     this.squirrelTween = this.tweens.add({
-      targets: this.enemy,
+      targets: global.enemy,
       x: 540,
       ease: 'Power0',
       duration: 3000,
       flipX: true,
       yoyo: true,
       repeat: -1,
-      onRepeat: this.throwNut,
+      onRepeat: () => {
+        console.log("throw nut");
+        const curX = global.enemy.x - 20;
+        const curY = global.enemy.y;
+
+        this.nut = this.physics.add.image(curX, curY, 'nut');
+        this.nut.setBounce(1);
+        this.nut.setDepth(5);
+        this.nut.setVelocityY(120).setVelocityX(-210);
+        this.physics.add.collider(this.player, this.nut, this.hitNut, null, this);
+      },
     });
   }
 
@@ -190,12 +206,33 @@ class Scene1 extends Scene {
     this.jumpButton = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
   }
 
+  hitNut(player) {
+    const curWidth = this.healthBar.displayWidth;
+    player.setTint(0xff0000);
+    this.cameras.main.shake(100, 0.01);
+
+    setTimeout(() => {
+      if (curWidth === 40) {
+        this.healthBar.setSize(0, 20);
+        player.anims.play('turn');
+        this.anims.pauseAll();
+        this.physics.pause();
+        this.squirrelTween.stop();
+        this.gameOver = true;
+        this.gameOverText.visible = true;
+      } else {
+        this.healthBar.setSize(curWidth - 40, 20);
+        player.clearTint();
+      }
+    }, 200);
+  }
+
   detectOverlap() {
     onLadder = true;
-    // console.log(`detect on ladder ${onLadder}`);
   }
 
   touchEnemy(player, enemy) {
+    this.healthBar.setSize(0, 20);
     player.setTint(0xff0000);
     player.anims.play('turn');
     this.anims.pauseAll();
@@ -209,42 +246,25 @@ class Scene1 extends Scene {
     // this.input.on('pointerdown', () => this.scene.start('preload'));
   }
 
-  createNuts() {
-    global.nuts = this.physics.add.group();
-    // this.physics.add.collider(this.nuts, this.platforms);
-    this.physics.add.collider(this.player, this.nuts);
-    // , this.hitBomb, null, this
-
-    global.nutParticles = this.add.particles('nut');
-    global.nutEmitter = global.nutParticles.createEmitter({
-      x: 300,
-      y: 500,
-      lifespan: 2000,
-      speedX: -10,
-      speedY: 10,
-      quantity: 3,
-      blendMode: 'ADD',
-    });
-  }
-
-  throwNut() {
-    console.log("throw nut");
-    const nut = global.nuts.create(200, 400, 'nut');
-    nut.setDepth(5);
-    // .setVelocity(Phaser.Math.Between(-200, 200), 20);
-
-    // const nuts = global.nuts.add.particles('nut');
-    // nuts.setDepth(5);
-    // const emitter = nuts.createEmitter({
-    //   x: 300,
-    //   y: 500,
-    //   lifespan: 2000,
-    //   speedX: -10,
-    //   speedY: 10,
-    //   quantity: 3,
-    //   blendMode: 'ADD',
-    // });
-  }
+  // createNuts() {
+  //   // , this.hitBomb, null, this
+  //   global.nuts = this.physics.add.group();
+  //   this.physics.add.collider(this.nuts, this.platforms);
+  //
+  //   global.nutParticles = this.add.particles('nut');
+  //   global.nutParticles.setDepth(5);
+  //   this.physics.add.collider(this.player, global.nutParticles);
+  //
+  //   global.nutEmitter = global.nutParticles.createEmitter({
+  //     lifespan: 2000,
+  //     speedX: -50,
+  //     speedY: 10,
+  //     gravityX: -200,
+  //     gravityY: 150,
+  //     on: false,
+  //   });
+  //
+  // }
 
   // ========================================================
   // Update
@@ -253,7 +273,6 @@ class Scene1 extends Scene {
     if (this.gameOver) {
       return;
     }
-
     // console.log(`update on ladder ${onLadder}`);
     if (this.cursors.left.isDown) {
       this.player.setVelocityX(-160);
@@ -299,10 +318,10 @@ class Scene1 extends Scene {
 
     // move enemy
 
-    // if (this.enemy.x > 500) {
-    //   this.enemy.x -= 2;
+    // if (global.enemy.x > 500) {
+    //   global.enemy.x -= 2;
     // } else {
-    //   this.enemy.x += 2;
+    //   global.enemy.x += 2;
     // }
   }
 }
