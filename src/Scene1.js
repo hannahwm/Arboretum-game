@@ -9,28 +9,11 @@ const global = {}
 class Scene1 extends Scene {
   constructor() {
     super('scene1'); // key: scene1
+    this.fadeTriggered = false;
     this.score = 0;
     this.gameOver = false;
     // this.onLadder = false;
     // this.isClimbing = false;
-  }
-
-  preload() {
-    this.load.image('sky', 'interactive/2019/08/phaser-game/assets/sky.png');
-    this.load.image('middle', 'interactive/2019/08/phaser-game/assets/middle.png');
-    this.load.image('background', 'interactive/2019/08/phaser-game/assets/background.png');
-    this.load.image('ground', 'interactive/2019/08/phaser-game/assets/ground.png');
-    this.load.image('platform', 'interactive/2019/08/phaser-game/assets/platform.png');
-    this.load.image('ladder', 'interactive/2019/08/phaser-game/assets/ladder.png');
-    this.load.image('goal', 'interactive/2019/08/phaser-game/assets/door.png');
-    this.load.image('nut', 'interactive/2019/08/phaser-game/assets/nut.png');
-    this.load.image('books', 'interactive/2019/08/phaser-game/assets/books.png');
-    this.load.spritesheet('dude',
-      'interactive/2019/08/phaser-game/assets/player.png',
-      { frameWidth: 24, frameHeight: 36 });
-    this.load.spritesheet('squirrel',
-      'interactive/2019/08/phaser-game/assets/squirrel.png',
-      { frameWidth: 43, frameHeight: 48 });
   }
 
   create() {
@@ -39,9 +22,9 @@ class Scene1 extends Scene {
 
     this.createGround();
     this.createPlatforms();
+    this.createPlayer();
     this.createLadders();
     this.createGoal();
-    this.createPlayer();
     this.createEnemies();
     this.createBooks();
     this.createHealthBar();
@@ -99,15 +82,18 @@ class Scene1 extends Scene {
   }
 
   createGround() {
-    this.ground = this.physics.add.staticGroup();
-    this.ground.create(400, 600, 'ground');
+    this.groundGroup = this.physics.add.staticGroup();
+    this.ground = this.groundGroup.create(400, 600, 'ground');
     this.ground.setDepth(3);
+    this.ground.setScale(2);
+    this.ground.setSize(4200, 63);
+    this.ground.setOffset(0, -8);
 
-    this.ground.children.iterate((child) => {
-      child.setScale(2);
-      child.setSize(4200, 63);
-      child.setOffset(0, -8);
-    });
+    // this.ground.children.iterate((child) => {
+    //   child.setScale(2);
+    //   child.setSize(4200, 63);
+    //   child.setOffset(0, -8);
+    // });
   }
 
   createPlatforms() {
@@ -133,16 +119,19 @@ class Scene1 extends Scene {
     this.ladders.setDepth(4);
 
     this.ladders.children.iterate((child) => {
-      child.setSize(40, 230);
-      child.setOffset(45, 35);
+      child.setSize(15, 230);
+      child.setOffset(56, 35);
+      this.physics.add.overlap(child, this.player, this.detectOverlap, false, this);
     });
   }
 
   createGoal() {
-    this.goal = this.physics.add.image(1700, 480, 'goal');
+    this.goal = this.physics.add.image(1850, 400, 'goal');
+    // this.goal.setSize(325, 316);
     this.goal.setDepth(4);
-    this.goal.setOffset(40, -20);
+    this.goal.setOffset(90, 0);
     this.physics.add.collider(this.goal, this.ground);
+    this.physics.add.overlap(this.player, this.goal, this.touchGoal, false, this);
   }
 
   createPlayer() {
@@ -152,12 +141,10 @@ class Scene1 extends Scene {
     // this.player.setOffset(3, 7);
     this.player.setBounce(0.2);
     this.player.setGravityY(300);
-    this.player.setDepth(4);
+    this.player.setDepth(5);
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.platforms);
     this.physics.add.collider(this.player, this.ground);
-    this.physics.add.overlap(this.player, this.goal, this.touchGoal, false, this);
-    this.physics.add.overlap(this.player, this.ladders, this.detectOverlap);
 
     this.anims.create({
       key: 'left',
@@ -175,6 +162,13 @@ class Scene1 extends Scene {
     this.anims.create({
       key: 'right',
       frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
+      frameRate: 10,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: 'climb',
+      frames: this.anims.generateFrameNumbers('dude', { start: 9, end: 10 }),
       frameRate: 10,
       repeat: -1,
     });
@@ -221,7 +215,7 @@ class Scene1 extends Scene {
           const curY = child.y;
           this.nut = this.physics.add.image(curX, curY, 'nut');
           this.nut.setBounce(1);
-          this.nut.setDepth(5);
+          this.nut.setDepth(6);
           this.nut.setVelocityY(80).setVelocityX(-350);
           this.physics.add.collider(this.player, this.nut, this.hitNut, null, this);
         },
@@ -254,12 +248,6 @@ class Scene1 extends Scene {
 
     this.score += 10;
     this.scoreText.setText(`Score: ${this.score}`);
-
-    if (this.books.countActive(true) === 0) {
-      this.books.children.iterate((child) => {
-        child.enableBody(true, child.x, 0, true, true);
-      });
-    }
   }
 
   createJumpButton() {
@@ -292,9 +280,11 @@ class Scene1 extends Scene {
   }
 
   touchEnemy(player, enemy) {
-    if (player.y < (enemy.y - (enemy.displayHeight - 10) )) {
+    // console.log(`player position: ${player.y}, enemy position: ${enemy.y - (enemy.displayHeight - 10)}`);
+    if (player.y < (enemy.y - (enemy.displayHeight - 10))) {
       enemy.body.velocity.x = 0;
-      enemy.y += 20;
+      enemy.y += 50;
+      this.tweens.killTweensOf(enemy);
       // enemy.destroy();
       player.y -= 30;
       this.score += 100;
@@ -316,11 +306,14 @@ class Scene1 extends Scene {
   }
 
   touchGoal() {
-    this.scene.start('scene2');
-    // this.cameras.main.fadeOut(2000, 255, 255, 255, () => {
-    //   this.on('camerafadeoutcomplete', () => {
-    //   }, this);
-    // });
+    if (!this.fadeTriggered) {
+      this.fadeTriggered = true;
+      this.cameras.main.fadeOut(1000, 255, 255, 255, () => {
+        this.cameras.main.on('camerafadeoutcomplete', () => {
+          this.scene.start('scene2', { score: this.score });
+        }, this);
+      });
+    }
   }
 
   // ========================================================
@@ -349,19 +342,24 @@ class Scene1 extends Scene {
 
     if (this.cursors.up.isDown && onLadder === true) {
       this.player.setGravityY(0);
-      this.player.anims.play('turn', true);
       this.player.setVelocityY(-100);
       // console.log('not climbing');
+      this.player.anims.play('climb', true);
       onLadder = false;
     } else if (this.cursors.down.isDown && onLadder === true) {
       this.player.setGravityY(0);
-      this.player.anims.play('turn', true);
       this.player.setVelocityY(100);
+      this.player.anims.play('climb', true);
       onLadder = false;
     } else {
-      if (onLadder === true) {
-        this.player.setGravityY(-4);
-        this.player.setVelocityY(-4);
+      if (onLadder === true && (this.player.y + this.player.height) < (this.ground.y - 20)) {
+        if (this.jumpButton.isDown) {
+          this.player.setVelocityY(-355);
+        } else {
+          this.player.setGravityY(-4);
+          this.player.setVelocityY(-4);
+        }
+        this.player.anims.play('climb', true);
         onLadder = false;
       } else {
         this.player.setGravityY(300);
@@ -370,9 +368,11 @@ class Scene1 extends Scene {
 
     // jumping
     if (this.jumpButton.isDown && (this.player.body.onFloor() || this.player.body.touching.down)) {
+      // if (onLadder === true) {
+      //   this.player.setVelocityY(-355);
+      // }
       this.player.setVelocityY(-355);
     }
-
   }
 }
 

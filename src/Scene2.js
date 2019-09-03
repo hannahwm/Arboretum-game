@@ -7,30 +7,19 @@ let colliderActivated = true;
 const global = {}
 
 class Scene2 extends Scene {
-  constructor() {
+
+  // initialize:
+
+  constructor(data) {
     super('scene2'); // key: scene1
-    this.score = 0;
     this.gameOver = false;
     // this.onLadder = false;
     // this.isClimbing = false;
   }
 
-  preload() {
-    this.load.image('sky2', 'interactive/2019/08/phaser-game/assets/sky2.png');
-    this.load.image('middle2', 'interactive/2019/08/phaser-game/assets/middle2.png');
-    this.load.image('background2', 'interactive/2019/08/phaser-game/assets/background2.png');
-    this.load.image('ground', 'interactive/2019/08/phaser-game/assets/ground.png');
-    this.load.image('platform', 'interactive/2019/08/phaser-game/assets/platform.png');
-    this.load.image('ladder', 'interactive/2019/08/phaser-game/assets/ladder.png');
-    this.load.image('goal', 'interactive/2019/08/phaser-game/assets/door.png');
-    this.load.image('nut', 'interactive/2019/08/phaser-game/assets/nut.png');
-    this.load.image('books', 'interactive/2019/08/phaser-game/assets/books.png');
-    this.load.spritesheet('dude',
-      'interactive/2019/08/phaser-game/assets/dude.png',
-      { frameWidth: 32, frameHeight: 48 });
-    this.load.spritesheet('squirrel',
-      'interactive/2019/08/phaser-game/assets/squirrel.png',
-      { frameWidth: 43, frameHeight: 48 });
+  // this is where data is carried over from the previous level
+  init(data) {
+    this.score = data.score;
   }
 
   create() {
@@ -53,7 +42,7 @@ class Scene2 extends Scene {
       this.map.height + this.player.height);
     this.cameras.main.startFollow(this.player, true, 0.5, 0.5, 0, 180);
 
-    this.scoreText = this.add.text(16, 20, 'score: 0', {
+    this.scoreText = this.add.text(16, 20, `score: ${this.score}`, {
       fontSize: '32px', fill: '#000', wordWrap: true, wordWrapWidth: this.player.width, align: 'center',
     });
     this.scoreText.setScrollFactor(0);
@@ -146,9 +135,9 @@ class Scene2 extends Scene {
   }
 
   createPlayer() {
-    this.player = this.physics.add.sprite(100, 550, 'dude');
-    this.player.setSize(25, 40);
-    this.player.setOffset(3, 7);
+    this.player = this.physics.add.sprite(100, 500, 'dude');
+    this.player.setSize(24, 36);
+    this.player.setScale(1.5);
     this.player.setBounce(0.2);
     this.player.setGravityY(300);
     this.player.setDepth(4);
@@ -188,21 +177,34 @@ class Scene2 extends Scene {
       repeat: -1,
     });
 
+    this.anims.create({
+      key: 'pigeon',
+      frames: this.anims.generateFrameNumbers('pigeon', { start: 0, end: 1 }),
+      frameRate: 1,
+      // yoyo: true,
+      repeat: -1,
+    });
+
     this.enemies = this.add.group();
+    this.enemiesReverse = this.add.group();
+    this.enemiesFloat = this.add.group();
 
     const enemy1 = this.physics.add.sprite(400, 410, 'squirrel').setDepth(5).setFlipX(true);
     const enemy2 = this.physics.add.sprite(700, 410, 'squirrel').setDepth(5);
     const enemy3 = this.physics.add.sprite(1100, 340, 'squirrel').setDepth(5);
+    const enemy4 = this.physics.add.sprite(950, 450, 'pigeon').setDepth(5);
 
 
-    this.enemies.addMultiple([enemy1, enemy2, enemy3], true);
+    this.enemies.addMultiple([enemy2, enemy3], true);
+    this.enemiesReverse.addMultiple([enemy1], true);
+    this.enemiesFloat.addMultiple([enemy4], true);
 
     for (let i = 0; i < this.enemies.children.size; i += 1) {
       const child = this.enemies.children.entries[i];
-      const index = i;
-      const child1 = this.enemies.children.entries[0];
-      const child2 = this.enemies.children.entries[1];
-      const child3 = this.enemies.children.entries[2];
+      // const index = i;
+      // const child1 = this.enemies.children.entries[0];
+      // const child2 = this.enemies.children.entries[1];
+      // const child3 = this.enemies.children.entries[2];
 
       child.setDepth(5).setGravityY(300);
       child.anims.play('squirrel');
@@ -210,8 +212,8 @@ class Scene2 extends Scene {
       this.physics.add.collider(child, this.platforms);
 
       this.squirrelTween = this.tweens.add({
-        targets: child2,
-        x: child2.x + 70,
+        targets: child,
+        x: child.x + 70,
         ease: 'Power0',
         duration: 1700,
         // delay: index * 2000,
@@ -220,8 +222,8 @@ class Scene2 extends Scene {
         repeat: -1,
         // repeatDelay: 500,
         onRepeat: () => {
-          const curX = child2.x - 20;
-          const curY = child2.y;
+          const curX = child.x - 20;
+          const curY = child.y;
           this.nut = this.physics.add.image(curX, curY, 'nut');
           this.nut.setBounce(1);
           this.nut.setDepth(5);
@@ -229,10 +231,23 @@ class Scene2 extends Scene {
           this.physics.add.collider(this.player, this.nut, this.hitNut, null, this);
         },
       });
+    }
+
+    for (let i = 0; i < this.enemiesReverse.children.size; i += 1) {
+      const child = this.enemiesReverse.children.entries[i];
+      // const index = i;
+      // const child1 = this.enemies.children.entries[0];
+      // const child2 = this.enemies.children.entries[1];
+      // const child3 = this.enemies.children.entries[2];
+
+      child.setDepth(5).setGravityY(300);
+      child.anims.play('squirrel');
+      this.physics.add.collider(this.player, child, this.touchEnemy, null, this);
+      this.physics.add.collider(child, this.platforms);
 
       this.squirrelTween2 = this.tweens.add({
-        targets: child1,
-        x: child1.x - 100,
+        targets: child,
+        x: child.x - 100,
         ease: 'Power0',
         duration: 2000,
         // delay: index * 2000,
@@ -241,14 +256,37 @@ class Scene2 extends Scene {
         repeat: -1,
         // repeatDelay: 500,
         onRepeat: () => {
-          const curX = child1.x - 20;
-          const curY = child1.y;
+          const curX = child.x - 20;
+          const curY = child.y;
           this.nut = this.physics.add.image(curX, curY, 'nut');
           this.nut.setBounce(1);
           this.nut.setDepth(5);
           this.nut.setVelocityY(80).setVelocityX(350);
           this.physics.add.collider(this.player, this.nut, this.hitNut, null, this);
         },
+      });
+    }
+
+    for (let i = 0; i < this.enemiesFloat.children.size; i += 1) {
+      const child = this.enemiesFloat.children.entries[i];
+      // const index = i;
+      // const child1 = this.enemies.children.entries[0];
+      // const child2 = this.enemies.children.entries[1];
+      // const child3 = this.enemies.children.entries[2];
+
+      child.setDepth(5).setGravityY(-300);
+      child.anims.play('pigeon');
+      this.physics.add.collider(this.player, child, this.touchEnemy, null, this);
+
+      this.floatTween = this.tweens.add({
+        targets: child,
+        y: child.y - 40,
+        ease: 'Linear',
+        duration: 1000,
+        // delay: index * 2000,
+        // flipX: true,
+        yoyo: true,
+        repeat: -1,
       });
     }
   }
@@ -317,8 +355,11 @@ class Scene2 extends Scene {
 
   touchEnemy(player, enemy) {
     if (player.y < (enemy.y - (enemy.displayHeight - 10) )) {
+      console.log(`player position: ${player.y}, enemy position: ${(enemy.displayHeight - 10)}`);
+      enemy.setGravityY(300);
       enemy.body.velocity.x = 0;
-      enemy.y += 20;
+      enemy.y += 50;
+      this.tweens.killTweensOf(enemy);
       // enemy.destroy();
       player.y -= 30;
       this.score += 100;
