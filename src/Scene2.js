@@ -28,9 +28,9 @@ class Scene2 extends Scene {
 
     this.createGround();
     this.createPlatforms();
+    this.createPlayer();
     this.createLadders();
     this.createGoal();
-    this.createPlayer();
     this.createEnemies();
     this.createBooks();
     this.createHealthBar();
@@ -106,7 +106,9 @@ class Scene2 extends Scene {
     // platform 2
     this.platforms.create(740, 460, 'platform');
     // platform 3
-    this.platforms.create(1140, 460, 'platform');
+    this.platforms.create(1040, 360, 'platform');
+    // platform 4
+    this.platforms.create(1220, 480, 'platform');
 
     this.platforms.children.iterate((child) => {
       child.setSize(160, 33);
@@ -120,6 +122,7 @@ class Scene2 extends Scene {
     this.ladders = this.physics.add.staticGroup();
     this.ladders.create(530, 440, 'ladder');
     this.ladders.setDepth(4);
+    this.physics.add.overlap(this.player, this.ladders, this.detectOverlap);
 
     this.ladders.children.iterate((child) => {
       child.setSize(40, 230);
@@ -128,24 +131,26 @@ class Scene2 extends Scene {
   }
 
   createGoal() {
-    this.goal = this.physics.add.image(1700, 480, 'goal');
+    this.goal = this.physics.add.image(1850, 400, 'goal');
+    // this.goal.setSize(325, 316);
     this.goal.setDepth(4);
-    this.goal.setOffset(40, -20);
+    this.goal.setOffset(90, 0);
     this.physics.add.collider(this.goal, this.ground);
+    this.physics.add.overlap(this.player, this.goal, this.touchGoal, false, this);
   }
 
   createPlayer() {
     this.player = this.physics.add.sprite(100, 500, 'dude');
-    this.player.setSize(24, 36);
+    this.player.setSize(18, 34);
+    this.player.setOffset(2, 4);
     this.player.setScale(1.5);
     this.player.setBounce(0.2);
     this.player.setGravityY(300);
-    this.player.setDepth(4);
+    this.player.setDepth(5);
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.platforms);
     this.physics.add.collider(this.player, this.ground);
     this.physics.add.overlap(this.player, this.goal, this.touchGoal, false, this);
-    this.physics.add.overlap(this.player, this.ladders, this.detectOverlap);
 
     this.anims.create({
       key: 'left',
@@ -157,6 +162,12 @@ class Scene2 extends Scene {
     this.anims.create({
       key: 'turn',
       frames: [{ key: 'dude', frame: 4 }],
+      frameRate: 20,
+    });
+
+    this.anims.create({
+      key: 'back',
+      frames: [{ key: 'dude', frame: 11 }],
       frameRate: 20,
     });
 
@@ -191,13 +202,14 @@ class Scene2 extends Scene {
 
     const enemy1 = this.physics.add.sprite(400, 410, 'squirrel').setDepth(5).setFlipX(true);
     const enemy2 = this.physics.add.sprite(700, 410, 'squirrel').setDepth(5);
-    const enemy3 = this.physics.add.sprite(1100, 340, 'squirrel').setDepth(5);
-    const enemy4 = this.physics.add.sprite(950, 450, 'pigeon').setDepth(5);
+    const enemy3 = this.physics.add.sprite(1180, 340, 'squirrel').setDepth(5);
+    const enemy4 = this.physics.add.sprite(900, 430, 'pigeon').setDepth(5);
+    const enemy5 = this.physics.add.sprite(1490, 520, 'pigeon').setDepth(5);
 
 
     this.enemies.addMultiple([enemy2, enemy3], true);
     this.enemiesReverse.addMultiple([enemy1], true);
-    this.enemiesFloat.addMultiple([enemy4], true);
+    this.enemiesFloat.addMultiple([enemy4, enemy5], true);
 
     for (let i = 0; i < this.enemies.children.size; i += 1) {
       const child = this.enemies.children.entries[i];
@@ -206,7 +218,7 @@ class Scene2 extends Scene {
       // const child2 = this.enemies.children.entries[1];
       // const child3 = this.enemies.children.entries[2];
 
-      child.setDepth(5).setGravityY(300);
+      child.setDepth(5).setGravityY(300).setCircle(24, -2, 1);
       child.anims.play('squirrel');
       this.physics.add.collider(this.player, child, this.touchEnemy, null, this);
       this.physics.add.collider(child, this.platforms);
@@ -240,7 +252,7 @@ class Scene2 extends Scene {
       // const child2 = this.enemies.children.entries[1];
       // const child3 = this.enemies.children.entries[2];
 
-      child.setDepth(5).setGravityY(300);
+      child.setDepth(5).setGravityY(300).setCircle(24, -2, 1);
       child.anims.play('squirrel');
       this.physics.add.collider(this.player, child, this.touchEnemy, null, this);
       this.physics.add.collider(child, this.platforms);
@@ -274,7 +286,7 @@ class Scene2 extends Scene {
       // const child2 = this.enemies.children.entries[1];
       // const child3 = this.enemies.children.entries[2];
 
-      child.setDepth(5).setGravityY(-300);
+      child.setDepth(5).setGravityY(-300).setCircle(20, 4, 0);
       child.anims.play('pigeon');
       this.physics.add.collider(this.player, child, this.touchEnemy, null, this);
 
@@ -298,8 +310,8 @@ class Scene2 extends Scene {
   createBooks() {
     this.books = this.physics.add.group({
       key: 'books',
-      repeat: 3,
-      setXY: { x: 300, y: 300, stepX: 270 },
+      repeat: 4,
+      setXY: { x: 280, y: 300, stepX: 250 },
     });
 
     this.books.children.iterate((child) => {
@@ -395,7 +407,6 @@ class Scene2 extends Scene {
     if (this.gameOver) {
       return;
     }
-    // console.log(`update on ladder ${onLadder}`);
     if (this.cursors.left.isDown) {
       this.player.setVelocityX(-100);
       this.player.x -= 2.5;
@@ -406,36 +417,36 @@ class Scene2 extends Scene {
       this.player.x += 2.5;
 
       this.player.anims.play('right', true);
-    } else {
-      this.player.setVelocityX(0);
-
-      this.player.anims.play('turn');
-    }
-
-    if (this.cursors.up.isDown && onLadder === true) {
+    } else if (this.cursors.up.isDown && onLadder === true) {
       this.player.setGravityY(0);
-      this.player.anims.play('turn', true);
       this.player.setVelocityY(-100);
-      // console.log('not climbing');
+      this.player.anims.play('climb', true);
       onLadder = false;
     } else if (this.cursors.down.isDown && onLadder === true) {
       this.player.setGravityY(0);
-      this.player.anims.play('turn', true);
       this.player.setVelocityY(100);
+      this.player.anims.play('climb', true);
       onLadder = false;
     } else {
-      if (onLadder === true) {
-        this.player.setGravityY(-4);
-        this.player.setVelocityY(-4);
+      this.player.anims.play('turn');
+      this.player.setGravityY(300);
+      this.player.setVelocityX(0);
+    }
+
+    if (this.jumpButton.isDown && (this.player.body.onFloor() || this.player.body.touching.down)) {
+      this.player.setVelocityY(-355);
+    } else {
+      if (onLadder === true && (this.player.y + this.player.height) < (this.ground.y - 20)) {
+        this.player.setGravityY(-5);
+        this.player.setVelocityY(-5);
+        if (this.jumpButton.isDown && this.player.y < (this.ladders.children.entries[0].y + 20)) {
+          this.player.setVelocityY(-355);
+        }
+        this.player.anims.play('back', true);
         onLadder = false;
       } else {
         this.player.setGravityY(300);
       }
-    }
-
-    // jumping
-    if (this.jumpButton.isDown && (this.player.body.onFloor() || this.player.body.touching.down)) {
-      this.player.setVelocityY(-355);
     }
   }
 }

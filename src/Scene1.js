@@ -2,15 +2,14 @@ import Phaser, { Scene } from 'phaser';
 import gameConfig from './gameConfig';
 
 let onLadder = false;
-let colliderActivated = true;
-
-const global = {}
 
 class Scene1 extends Scene {
   constructor() {
     super('scene1'); // key: scene1
     this.fadeTriggered = false;
     this.score = 0;
+    this.startTime = new Date();
+    this.timeElapsed = 0;
     this.gameOver = false;
     // this.onLadder = false;
     // this.isClimbing = false;
@@ -19,6 +18,7 @@ class Scene1 extends Scene {
   create() {
     this.cameras.main.setBackgroundColor('#C9E9F0');
     this.cameras.main.fadeIn(2000, 255, 255, 255);
+
 
     this.createGround();
     this.createPlatforms();
@@ -36,6 +36,9 @@ class Scene1 extends Scene {
       this.map.height + this.player.height);
     this.cameras.main.startFollow(this.player, true, 0.5, 0.5, 0, 180);
 
+    this.createTimer();
+    this.gameTimer = this.time.delayedCall(100, this.updateTimer, [], this);
+
     this.scoreText = this.add.text(16, 20, 'score: 0', {
       fontSize: '32px', fill: '#000', wordWrap: true, wordWrapWidth: this.player.width, align: 'center',
     });
@@ -47,9 +50,38 @@ class Scene1 extends Scene {
     this.gameOverText.setDepth(5);
   }
 
+  createTimer() {
+    this.timeLabel = this.add.text(400, 37, '00:00', {
+      fontSize: '32px', fill: '#000', wordWrap: true, wordWrapWidth: this.player.width, align: 'center',
+    });
+    this.timeLabel.setScrollFactor(0);
+    this.timeLabel.setOrigin(0.5);
+    this.timeLabel.setDepth(5);
+  }
+
+  updateTimer() {
+    const currentTime = new Date();
+    const timeDifference = this.startTime.getTime() - currentTime.getTime();
+
+    // Time elapsed in seconds
+    this.timeElapsed = Math.abs(timeDifference / 1000);
+
+    // Convert seconds into minutes and seconds
+    const minutes = Math.floor(this.timeElapsed / 60);
+    const seconds = Math.floor(this.timeElapsed) - (60 * minutes);
+
+    // Display minutes, add a 0 to the start if less than 10
+    let result = (minutes < 10) ? `0 ${minutes}` : minutes;
+
+    // Display seconds, add a 0 to the start if less than 10
+    result += (seconds < 10) ? `:0 ${seconds}` : `: ${seconds}`;
+
+    this.timeLabel.text = result;
+  }
+
   createHealthBar() {
-    this.add.rectangle(700, 40, 124, 24, '0x000000').setDepth(5).setScrollFactor(0);
-    this.healthBar = this.add.rectangle(700, 40, 120, 20, '0xcc0000');
+    this.add.rectangle(700, 36, 124, 24, '0x000000').setDepth(5).setScrollFactor(0);
+    this.healthBar = this.add.rectangle(700, 36, 120, 20, '0xcc0000');
     this.healthBar.setDepth(6);
     this.healthBar.setScrollFactor(0);
   }
@@ -136,7 +168,8 @@ class Scene1 extends Scene {
 
   createPlayer() {
     this.player = this.physics.add.sprite(100, 500, 'dude');
-    this.player.setSize(24, 36);
+    this.player.setSize(18, 34);
+    this.player.setOffset(2, 4);
     this.player.setScale(1.5);
     // this.player.setOffset(3, 7);
     this.player.setBounce(0.2);
@@ -160,6 +193,12 @@ class Scene1 extends Scene {
     });
 
     this.anims.create({
+      key: 'back',
+      frames: [{ key: 'dude', frame: 11 }],
+      frameRate: 20,
+    });
+
+    this.anims.create({
       key: 'right',
       frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
       frameRate: 10,
@@ -169,7 +208,7 @@ class Scene1 extends Scene {
     this.anims.create({
       key: 'climb',
       frames: this.anims.generateFrameNumbers('dude', { start: 9, end: 10 }),
-      frameRate: 10,
+      frameRate: 4,
       repeat: -1,
     });
   }
@@ -323,7 +362,9 @@ class Scene1 extends Scene {
     if (this.gameOver) {
       return;
     }
-    // console.log(`update on ladder ${onLadder}`);
+
+    this.updateTimer();
+
     if (this.cursors.left.isDown) {
       this.player.setVelocityX(-100);
       this.player.x -= 2.5;
@@ -334,16 +375,9 @@ class Scene1 extends Scene {
       this.player.x += 2.5;
 
       this.player.anims.play('right', true);
-    } else {
-      this.player.setVelocityX(0);
-
-      this.player.anims.play('turn');
-    }
-
-    if (this.cursors.up.isDown && onLadder === true) {
+    } else if (this.cursors.up.isDown && onLadder === true) {
       this.player.setGravityY(0);
       this.player.setVelocityY(-100);
-      // console.log('not climbing');
       this.player.anims.play('climb', true);
       onLadder = false;
     } else if (this.cursors.down.isDown && onLadder === true) {
@@ -352,26 +386,25 @@ class Scene1 extends Scene {
       this.player.anims.play('climb', true);
       onLadder = false;
     } else {
+      this.player.anims.play('turn');
+      this.player.setGravityY(300);
+      this.player.setVelocityX(0);
+    }
+
+    if (this.jumpButton.isDown && (this.player.body.onFloor() || this.player.body.touching.down)) {
+      this.player.setVelocityY(-355);
+    } else {
       if (onLadder === true && (this.player.y + this.player.height) < (this.ground.y - 20)) {
-        if (this.jumpButton.isDown) {
+        this.player.setGravityY(-5);
+        this.player.setVelocityY(-5);
+        if (this.jumpButton.isDown && this.player.y < (this.ladders.children.entries[0].y + 20)) {
           this.player.setVelocityY(-355);
-        } else {
-          this.player.setGravityY(-4);
-          this.player.setVelocityY(-4);
         }
-        this.player.anims.play('climb', true);
+        this.player.anims.play('back', true);
         onLadder = false;
       } else {
         this.player.setGravityY(300);
       }
-    }
-
-    // jumping
-    if (this.jumpButton.isDown && (this.player.body.onFloor() || this.player.body.touching.down)) {
-      // if (onLadder === true) {
-      //   this.player.setVelocityY(-355);
-      // }
-      this.player.setVelocityY(-355);
     }
   }
 }
