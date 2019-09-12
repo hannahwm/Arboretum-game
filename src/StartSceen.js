@@ -6,29 +6,31 @@ class StartScreen extends Scene {
   }
 
   preload() {
-
-    const width = this.cameras.main.width;
-    const height = this.cameras.main.height;
-    const loadingText = this.make.text({
-      x: width / 2,
-      y: height / 2,
-      text: 'Start Game',
-      style: {
-        font: '20px monospace',
-        fill: '#ffffff',
-      },
-    });
-    loadingText.setOrigin(0.5, 0.5);
-
-    this.load.image('logo', '/interactive/2019/08/phaser-game/assets/logo.png');
+    this.load.image('screen', '/interactive/2019/08/phaser-game/assets/title-screen.png');
   }
 
   create() {
-    // this.cameras.main.setBackgroundColor('#ade6ff');
-    // this.cameras.main.fadeIn(2000, 255, 255, 255);
-    // const logo = this.add.image(400, 300, 'logo');
-    // logo.setDepth(1);
-    this.input.on('pointerdown', () => this.scene.start('preload'));
+    this.width = this.cameras.main.width;
+    this.isSmall = false;
+    this.isMedium = false;
+
+    if (this.width < 376) {
+      this.isSmall = true;
+    } else if (this.width < 700) {
+      this.isMedium = true;
+    }
+    if (this.isSmall) {
+      const screen = this.add.image(0, 0, 'screen').setScale(0.4);
+      screen.setOrigin(0, 0);
+    } else if (this.isMedium) {
+      const screen = this.add.image(0, 0, 'screen').setScale(0.5);
+      screen.setOrigin(0, 0);
+    } else {
+      const screen = this.add.image(0, 0, 'screen');
+      screen.setOrigin(0, 0);
+    }
+
+    this.input.on('pointerdown', () => this.scene.start('instructions', { small: this.isSmall, medium: this.isMedium }));
   }
 }
 

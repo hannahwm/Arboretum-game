@@ -2,17 +2,12 @@ import Phaser, { Scene } from 'phaser';
 import gameConfig from './gameConfig';
 
 let onLadder = false;
-let colliderActivated = true;
-
-const global = {}
 
 class Scene2 extends Scene {
 
-  // initialize:
-
-  constructor(data) {
+  constructor() {
     super('scene2'); // key: scene1
-    this.gameOver = false;
+    this.startTime = new Date();
     // this.onLadder = false;
     // this.isClimbing = false;
   }
@@ -20,9 +15,15 @@ class Scene2 extends Scene {
   // this is where data is carried over from the previous level
   init(data) {
     this.score = data.score;
+    this.timeElapsed = data.time;
+    this.booksNum = data.books;
   }
 
   create() {
+    this.fadeTriggered = false;
+    this.gameOver = false;
+    this.curTime = this.timeElapsed;
+
     this.cameras.main.setBackgroundColor('#C9E9F0');
     this.cameras.main.fadeIn(2000, 255, 255, 255);
 
@@ -42,20 +43,48 @@ class Scene2 extends Scene {
       this.map.height + this.player.height);
     this.cameras.main.startFollow(this.player, true, 0.5, 0.5, 0, 180);
 
+    this.createTimer();
+    this.gameTimer = this.time.delayedCall(100, this.updateTimer, [], this);
+
     this.scoreText = this.add.text(16, 20, `score: ${this.score}`, {
-      fontSize: '32px', fill: '#000', wordWrap: true, wordWrapWidth: this.player.width, align: 'center',
+      fontFamily: 'Lato, sans-serif', fontSize: '20px', fill: '#000', wordWrap: true, wordWrapWidth: this.player.width, align: 'center',
     });
     this.scoreText.setScrollFactor(0);
-    this.gameOverText = this.add.text(400, 300, 'Game Over', { fontSize: '64px', fill: '#000' });
-    this.gameOverText.setOrigin(0.5);
-    this.gameOverText.visible = false;
-    this.gameOverText.setScrollFactor(0);
-    this.gameOverText.setDepth(5);
+  }
+
+  createTimer() {
+    this.timeLabel = this.add.text(395, 37, this.timeElapsed, {
+      fontFamily: 'Lato, sans-serif', fontSize: '20px', fill: '#000', wordWrap: true, wordWrapWidth: this.player.width, align: 'center',
+    });
+    this.timeLabel.setScrollFactor(0);
+    this.timeLabel.setOrigin(0.5);
+    this.timeLabel.setDepth(5);
+  }
+
+  updateTimer() {
+    const currentTime = new Date();
+    const timeDifference = this.startTime.getTime() - currentTime.getTime();
+
+    // Time elapsed in seconds
+    this.timeElapsed = Math.abs(timeDifference / 1000);
+
+    // Convert seconds into minutes and seconds
+    const minutes = Math.floor(this.timeElapsed / 60);
+    const seconds = Math.floor(this.timeElapsed) - (60 * minutes);
+
+    // Display minutes, add a 0 to the start if less than 10
+    let result = (minutes < 10) ? `0 ${minutes}` : minutes;
+
+    // Display seconds, add a 0 to the start if less than 10
+    result += (seconds < 10) ? `:0 ${seconds}` : `: ${seconds}`;
+
+    this.timeLabel.text = result;
+    this.curTime = result;
   }
 
   createHealthBar() {
-    this.add.rectangle(700, 40, 124, 24, '0x000000').setDepth(5).setScrollFactor(0);
-    this.healthBar = this.add.rectangle(700, 40, 120, 20, '0xcc0000');
+    this.add.rectangle(720, 36, 124, 24, '0x000000').setDepth(5).setScrollFactor(0);
+    this.healthBar = this.add.rectangle(720, 36, 120, 20, '0xcc0000');
     this.healthBar.setDepth(6);
     this.healthBar.setScrollFactor(0);
   }
@@ -64,17 +93,14 @@ class Scene2 extends Scene {
     this.map = this.add.image(0, 0, 'background2');
     this.map.setDepth(2);
     this.map.setOrigin(0, 0.05);
-    // this.map.setScale(0.75);
 
     this.middle = this.add.image(0, 0, 'middle2');
     this.middle.setDepth(1);
     this.middle.setOrigin(0, 0.05);
-    // this.middle.setScale(0.75);
 
     this.sky = this.add.image(0, 0, 'sky2');
     this.sky.setDepth(0);
     this.sky.setOrigin(0, 0);
-    // this.sky.setScale(0.5);
 
     const gameWidth = parseFloat(this.map.getBounds().width);
     const windowWidth = gameConfig.width;
@@ -88,15 +114,12 @@ class Scene2 extends Scene {
   }
 
   createGround() {
-    this.ground = this.physics.add.staticGroup();
-    this.ground.create(400, 600, 'ground');
+    this.groundGroup = this.physics.add.staticGroup();
+    this.ground = this.groundGroup.create(400, 600, 'ground');
     this.ground.setDepth(3);
-
-    this.ground.children.iterate((child) => {
-      child.setScale(2);
-      child.setSize(4200, 63);
-      child.setOffset(0, -8);
-    });
+    this.ground.setScale(2);
+    this.ground.setSize(4200, 63);
+    this.ground.setOffset(0, -8);
   }
 
   createPlatforms() {
@@ -127,12 +150,12 @@ class Scene2 extends Scene {
     this.ladders.children.iterate((child) => {
       child.setSize(40, 230);
       child.setOffset(45, 35);
+      this.physics.add.overlap(child, this.player, this.detectOverlap, false, this);
     });
   }
 
   createGoal() {
     this.goal = this.physics.add.image(1850, 400, 'goal');
-    // this.goal.setSize(325, 316);
     this.goal.setDepth(4);
     this.goal.setOffset(90, 0);
     this.physics.add.collider(this.goal, this.ground);
@@ -150,52 +173,10 @@ class Scene2 extends Scene {
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.platforms);
     this.physics.add.collider(this.player, this.ground);
-    this.physics.add.overlap(this.player, this.goal, this.touchGoal, false, this);
-
-    this.anims.create({
-      key: 'left',
-      frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: 'turn',
-      frames: [{ key: 'dude', frame: 4 }],
-      frameRate: 20,
-    });
-
-    this.anims.create({
-      key: 'back',
-      frames: [{ key: 'dude', frame: 11 }],
-      frameRate: 20,
-    });
-
-    this.anims.create({
-      key: 'right',
-      frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
-      frameRate: 10,
-      repeat: -1,
-    });
+    // this.physics.add.overlap(this.player, this.goal, this.touchGoal, false, this);
   }
 
   createEnemies() {
-    this.anims.create({
-      key: 'squirrel',
-      frames: this.anims.generateFrameNumbers('squirrel', { start: 1, end: 3 }),
-      frameRate: 5,
-      yoyo: true,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: 'pigeon',
-      frames: this.anims.generateFrameNumbers('pigeon', { start: 0, end: 1 }),
-      frameRate: 1,
-      // yoyo: true,
-      repeat: -1,
-    });
-
     this.enemies = this.add.group();
     this.enemiesReverse = this.add.group();
     this.enemiesFloat = this.add.group();
@@ -213,10 +194,6 @@ class Scene2 extends Scene {
 
     for (let i = 0; i < this.enemies.children.size; i += 1) {
       const child = this.enemies.children.entries[i];
-      // const index = i;
-      // const child1 = this.enemies.children.entries[0];
-      // const child2 = this.enemies.children.entries[1];
-      // const child3 = this.enemies.children.entries[2];
 
       child.setDepth(5).setGravityY(300).setCircle(24, -2, 1);
       child.anims.play('squirrel');
@@ -228,11 +205,9 @@ class Scene2 extends Scene {
         x: child.x + 70,
         ease: 'Power0',
         duration: 1700,
-        // delay: index * 2000,
         flipX: true,
         yoyo: true,
         repeat: -1,
-        // repeatDelay: 500,
         onRepeat: () => {
           const curX = child.x - 20;
           const curY = child.y;
@@ -247,10 +222,6 @@ class Scene2 extends Scene {
 
     for (let i = 0; i < this.enemiesReverse.children.size; i += 1) {
       const child = this.enemiesReverse.children.entries[i];
-      // const index = i;
-      // const child1 = this.enemies.children.entries[0];
-      // const child2 = this.enemies.children.entries[1];
-      // const child3 = this.enemies.children.entries[2];
 
       child.setDepth(5).setGravityY(300).setCircle(24, -2, 1);
       child.anims.play('squirrel');
@@ -262,11 +233,9 @@ class Scene2 extends Scene {
         x: child.x - 100,
         ease: 'Power0',
         duration: 2000,
-        // delay: index * 2000,
         flipX: true,
         yoyo: true,
         repeat: -1,
-        // repeatDelay: 500,
         onRepeat: () => {
           const curX = child.x - 20;
           const curY = child.y;
@@ -281,10 +250,6 @@ class Scene2 extends Scene {
 
     for (let i = 0; i < this.enemiesFloat.children.size; i += 1) {
       const child = this.enemiesFloat.children.entries[i];
-      // const index = i;
-      // const child1 = this.enemies.children.entries[0];
-      // const child2 = this.enemies.children.entries[1];
-      // const child3 = this.enemies.children.entries[2];
 
       child.setDepth(5).setGravityY(-300).setCircle(20, 4, 0);
       child.anims.play('pigeon');
@@ -295,8 +260,6 @@ class Scene2 extends Scene {
         y: child.y - 40,
         ease: 'Linear',
         duration: 1000,
-        // delay: index * 2000,
-        // flipX: true,
         yoyo: true,
         repeat: -1,
       });
@@ -328,12 +291,13 @@ class Scene2 extends Scene {
 
     this.score += 10;
     this.scoreText.setText(`Score: ${this.score}`);
+    this.booksNum += 1;
 
-    if (this.books.countActive(true) === 0) {
-      this.books.children.iterate((child) => {
-        child.enableBody(true, child.x, 0, true, true);
-      });
-    }
+    // if (this.books.countActive(true) === 0) {
+    //   this.books.children.iterate((child) => {
+    //     child.enableBody(true, child.x, 0, true, true);
+    //   });
+    // }
   }
 
   createJumpButton() {
@@ -347,13 +311,7 @@ class Scene2 extends Scene {
 
     setTimeout(() => {
       if (curWidth === 40) {
-        this.healthBar.setSize(0, 20);
-        player.anims.play('turn');
-        this.anims.pauseAll();
-        this.physics.pause();
-        this.squirrelTween.stop();
-        this.gameOver = true;
-        this.gameOverText.visible = true;
+        this.callGameOver(player);
       } else {
         this.healthBar.setSize(curWidth - 40, 20);
         player.clearTint();
@@ -366,38 +324,50 @@ class Scene2 extends Scene {
   }
 
   touchEnemy(player, enemy) {
-    if (player.y < (enemy.y - (enemy.displayHeight - 10) )) {
-      console.log(`player position: ${player.y}, enemy position: ${(enemy.displayHeight - 10)}`);
-      enemy.setGravityY(300);
+    if (player.y < (enemy.y - (enemy.displayHeight - 10))) {
       enemy.body.velocity.x = 0;
-      enemy.y += 50;
+      if (enemy.anims.currentAnim.key === "pigeon") {
+        enemy.y += 150;
+      } else {
+        enemy.y += 50;
+      }
       this.tweens.killTweensOf(enemy);
       // enemy.destroy();
       player.y -= 30;
-      this.score += 100;
+      this.score += 150;
       this.scoreText.setText(`Score: ${this.score}`);
     } else {
-      this.healthBar.setSize(0, 20);
-      player.setTint(0xff0000);
-      player.anims.play('turn');
-      this.anims.pauseAll();
-      this.physics.pause();
-      this.tweens.killAll();
-      this.cameras.main.shake(100, 0.01);
-      this.gameOver = true;
-      this.gameOverText.visible = true;
+      this.callGameOver(player);
     }
-
-    // this.scene.restart();
-    // this.input.on('pointerdown', () => this.scene.start('preload'));
   }
 
   touchGoal() {
-    // this.cameras.main.fadeOut(1000, 255, 255, 255, () => {
-    //   this.cameras.main.on('camerafadeoutcomplete', () => {
-        this.scene.start('scene1');
-      // }, this);
-    // });
+    if (!this.fadeTriggered) {
+      this.fadeTriggered = true;
+      this.cameras.main.fadeOut(1000, 255, 255, 255, () => {
+        this.cameras.main.on('camerafadeoutcomplete', () => {
+          this.scene.start('winscreen', { score: this.score, time: this.timeElapsed, books: this.booksNum });
+        }, this);
+      });
+    }
+  }
+
+  callGameOver(player) {
+    this.healthBar.setSize(0, 20);
+    player.setTint(0xff0000);
+    player.anims.play('turn');
+    this.physics.pause();
+    this.cameras.main.shake(100, 0.01);
+    this.gameOver = true;
+
+    if (!this.fadeTriggered) {
+      this.fadeTriggered = true;
+      this.cameras.main.fadeOut(800, 255, 255, 255, () => {
+        this.cameras.main.on('camerafadeoutcomplete', () => {
+          this.scene.start('gameover', { score: this.score, time: this.curTime });
+        }, this);
+      });
+    }
   }
 
   // ========================================================
@@ -407,6 +377,9 @@ class Scene2 extends Scene {
     if (this.gameOver) {
       return;
     }
+
+    this.updateTimer();
+
     if (this.cursors.left.isDown) {
       this.player.setVelocityX(-100);
       this.player.x -= 2.5;

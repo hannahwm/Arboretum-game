@@ -6,19 +6,35 @@ let onLadder = false;
 class Scene1 extends Scene {
   constructor() {
     super('scene1'); // key: scene1
-    this.fadeTriggered = false;
-    this.score = 0;
-    this.startTime = new Date();
-    this.timeElapsed = 0;
-    this.gameOver = false;
-    // this.onLadder = false;
-    // this.isClimbing = false;
+  }
+
+  init(data) {
+    this.isSmall = data.small;
+    this.isMedium = data.medium;
   }
 
   create() {
+    this.fadeTriggered = false;
+    this.gameOver = false;
+    this.score = 0;
+    this.booksNum = 0;
+    this.startTime = new Date();
+    this.timeElapsed = 0;
+    this.curTime = 0;
     this.cameras.main.setBackgroundColor('#C9E9F0');
     this.cameras.main.fadeIn(2000, 255, 255, 255);
+    this.moveRight = false;
+    this.moveLeft = false;
+    this.moveUp = false;
+    this.moveDown = false;
 
+    if (this.isSmall) {
+      this.fontSize = '12px';
+    } else if (this.isMedium) {
+      this.fontSize = '14px';
+    } else {
+      this.fontSize = '20px';
+    }
 
     this.createGround();
     this.createPlatforms();
@@ -30,6 +46,7 @@ class Scene1 extends Scene {
     this.createHealthBar();
     this.createBackground();
     this.createCursor();
+    this.createMobileControls();
     this.createJumpButton();
     this.cameras.main.setBounds(0, 0, this.map.width, this.map.height);
     this.physics.world.setBounds(0, 0, this.map.getBounds().width,
@@ -40,19 +57,14 @@ class Scene1 extends Scene {
     this.gameTimer = this.time.delayedCall(100, this.updateTimer, [], this);
 
     this.scoreText = this.add.text(16, 20, 'score: 0', {
-      fontSize: '32px', fill: '#000', wordWrap: true, wordWrapWidth: this.player.width, align: 'center',
+      fontFamily: 'Lato, sans-serif', fontSize: this.fontSize, fill: '#000', wordWrap: true, wordWrapWidth: this.player.width, align: 'center',
     });
     this.scoreText.setScrollFactor(0);
-    this.gameOverText = this.add.text(400, 300, 'Game Over', { fontSize: '64px', fill: '#000' });
-    this.gameOverText.setOrigin(0.5);
-    this.gameOverText.visible = false;
-    this.gameOverText.setScrollFactor(0);
-    this.gameOverText.setDepth(5);
   }
 
   createTimer() {
-    this.timeLabel = this.add.text(400, 37, '00:00', {
-      fontSize: '32px', fill: '#000', wordWrap: true, wordWrapWidth: this.player.width, align: 'center',
+    this.timeLabel = this.add.text(395, 37, '00:00', {
+      fontFamily: 'Lato, sans-serif', fontSize: this.fontSize, fill: '#000', wordWrap: true, wordWrapWidth: this.player.width, align: 'center',
     });
     this.timeLabel.setScrollFactor(0);
     this.timeLabel.setOrigin(0.5);
@@ -77,11 +89,12 @@ class Scene1 extends Scene {
     result += (seconds < 10) ? `:0 ${seconds}` : `: ${seconds}`;
 
     this.timeLabel.text = result;
+    this.curTime = result;
   }
 
   createHealthBar() {
-    this.add.rectangle(700, 36, 124, 24, '0x000000').setDepth(5).setScrollFactor(0);
-    this.healthBar = this.add.rectangle(700, 36, 120, 20, '0xcc0000');
+    this.add.rectangle(720, 36, 124, 24, '0x000000').setDepth(5).setScrollFactor(0);
+    this.healthBar = this.add.rectangle(720, 36, 120, 20, '0xcc0000');
     this.healthBar.setDepth(6);
     this.healthBar.setScrollFactor(0);
   }
@@ -90,17 +103,14 @@ class Scene1 extends Scene {
     this.map = this.add.image(0, 0, 'background');
     this.map.setDepth(2);
     this.map.setOrigin(0, 0.05);
-    // this.map.setScale(0.75);
 
     this.middle = this.add.image(0, 0, 'middle');
     this.middle.setDepth(1);
     this.middle.setOrigin(0, 0.05);
-    // this.middle.setScale(0.75);
 
     this.sky = this.add.image(0, 0, 'sky');
     this.sky.setDepth(0);
     this.sky.setOrigin(0, 0);
-    // this.sky.setScale(0.5);
 
     const gameWidth = parseFloat(this.map.getBounds().width);
     const windowWidth = gameConfig.width;
@@ -120,12 +130,6 @@ class Scene1 extends Scene {
     this.ground.setScale(2);
     this.ground.setSize(4200, 63);
     this.ground.setOffset(0, -8);
-
-    // this.ground.children.iterate((child) => {
-    //   child.setScale(2);
-    //   child.setSize(4200, 63);
-    //   child.setOffset(0, -8);
-    // });
   }
 
   createPlatforms() {
@@ -159,7 +163,6 @@ class Scene1 extends Scene {
 
   createGoal() {
     this.goal = this.physics.add.image(1850, 400, 'goal');
-    // this.goal.setSize(325, 316);
     this.goal.setDepth(4);
     this.goal.setOffset(90, 0);
     this.physics.add.collider(this.goal, this.ground);
@@ -171,56 +174,15 @@ class Scene1 extends Scene {
     this.player.setSize(18, 34);
     this.player.setOffset(2, 4);
     this.player.setScale(1.5);
-    // this.player.setOffset(3, 7);
     this.player.setBounce(0.2);
     this.player.setGravityY(300);
     this.player.setDepth(5);
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.platforms);
     this.physics.add.collider(this.player, this.ground);
-
-    this.anims.create({
-      key: 'left',
-      frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: 'turn',
-      frames: [{ key: 'dude', frame: 4 }],
-      frameRate: 20,
-    });
-
-    this.anims.create({
-      key: 'back',
-      frames: [{ key: 'dude', frame: 11 }],
-      frameRate: 20,
-    });
-
-    this.anims.create({
-      key: 'right',
-      frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
-      frameRate: 10,
-      repeat: -1,
-    });
-
-    this.anims.create({
-      key: 'climb',
-      frames: this.anims.generateFrameNumbers('dude', { start: 9, end: 10 }),
-      frameRate: 4,
-      repeat: -1,
-    });
   }
 
   createEnemies() {
-    this.anims.create({
-      key: 'squirrel',
-      frames: this.anims.generateFrameNumbers('squirrel', { start: 1, end: 3 }),
-      frameRate: 5,
-      yoyo: true,
-      repeat: -1,
-    });
 
     this.enemies = this.add.group();
 
@@ -248,7 +210,6 @@ class Scene1 extends Scene {
         flipX: true,
         yoyo: true,
         repeat: -1,
-        // repeatDelay: 500,
         onRepeat: () => {
           const curX = child.x - 20;
           const curY = child.y;
@@ -264,6 +225,50 @@ class Scene1 extends Scene {
 
   createCursor() {
     this.cursors = this.input.keyboard.createCursorKeys();
+  }
+
+  createMobileControls() {
+    this.space = this.add.image(250, 560, 'space');
+    this.space.setDepth(6).setInteractive().setScrollFactor(0);
+    this.space.on('pointerdown', () => {
+      this.player.setVelocityY(-355);
+    });
+
+    this.right = this.add.image(650, 560, 'right');
+    this.right.setDepth(6).setInteractive().setScrollFactor(0);
+    this.right.on('pointerdown', () => {
+      this.moveRight = true;
+    }, this);
+    this.right.on('pointerup', () => {
+      this.moveRight = false;
+    }, this);
+
+    this.left = this.add.image(550, 560, 'left');
+    this.left.setDepth(6).setInteractive().setScrollFactor(0);
+    this.left.on('pointerdown', () => {
+      this.moveLeft = true;
+    }, this);
+    this.left.on('pointerup', () => {
+      this.moveLeft = false;
+    }, this);
+
+    this.up = this.add.image(600, 510, 'up');
+    this.up.setDepth(6).setInteractive().setScrollFactor(0);
+    this.up.on('pointerdown', () => {
+      this.moveUp = true;
+    }, this);
+    this.up.on('pointerup', () => {
+      this.moveUp = false;
+    }, this);
+
+    this.down = this.add.image(600, 560, 'down');
+    this.down.setDepth(6).setInteractive().setScrollFactor(0);
+    this.down.on('pointerdown', () => {
+      this.moveDown = true;
+    }, this);
+    this.down.on('pointerup', () => {
+      this.moveDown = false;
+    }, this);
   }
 
   createBooks() {
@@ -287,6 +292,7 @@ class Scene1 extends Scene {
 
     this.score += 10;
     this.scoreText.setText(`Score: ${this.score}`);
+    this.booksNum += 1;
   }
 
   createJumpButton() {
@@ -300,13 +306,7 @@ class Scene1 extends Scene {
 
     setTimeout(() => {
       if (curWidth === 40) {
-        this.healthBar.setSize(0, 20);
-        player.anims.play('turn');
-        this.anims.pauseAll();
-        this.physics.pause();
-        this.squirrelTween.stop();
-        this.gameOver = true;
-        this.gameOverText.visible = true;
+        this.callGameOver(player);
       } else {
         this.healthBar.setSize(curWidth - 40, 20);
         player.clearTint();
@@ -319,7 +319,6 @@ class Scene1 extends Scene {
   }
 
   touchEnemy(player, enemy) {
-    // console.log(`player position: ${player.y}, enemy position: ${enemy.y - (enemy.displayHeight - 10)}`);
     if (player.y < (enemy.y - (enemy.displayHeight - 10))) {
       enemy.body.velocity.x = 0;
       enemy.y += 50;
@@ -329,19 +328,8 @@ class Scene1 extends Scene {
       this.score += 100;
       this.scoreText.setText(`Score: ${this.score}`);
     } else {
-      this.healthBar.setSize(0, 20);
-      player.setTint(0xff0000);
-      player.anims.play('turn');
-      this.anims.pauseAll();
-      this.physics.pause();
-      this.tweens.killAll();
-      this.cameras.main.shake(100, 0.01);
-      this.gameOver = true;
-      this.gameOverText.visible = true;
+      this.callGameOver(player);
     }
-
-    // this.scene.restart();
-    // this.input.on('pointerdown', () => this.scene.start('preload'));
   }
 
   touchGoal() {
@@ -349,7 +337,27 @@ class Scene1 extends Scene {
       this.fadeTriggered = true;
       this.cameras.main.fadeOut(1000, 255, 255, 255, () => {
         this.cameras.main.on('camerafadeoutcomplete', () => {
-          this.scene.start('scene2', { score: this.score });
+          this.scene.start('scene2', { score: this.score, time: this.timeElapsed, books: this.booksNum });
+        }, this);
+      });
+    }
+  }
+
+  callGameOver(player) {
+    this.healthBar.setSize(0, 20);
+    player.setTint(0xff0000);
+    player.anims.play('turn');
+    // this.anims.pauseAll();
+    this.physics.pause();
+    // this.tweens.pauseAll();
+    this.cameras.main.shake(100, 0.01);
+    this.gameOver = true;
+
+    if (!this.fadeTriggered) {
+      this.fadeTriggered = true;
+      this.cameras.main.fadeOut(800, 255, 255, 255, () => {
+        this.cameras.main.on('camerafadeoutcomplete', () => {
+          this.scene.start('gameover', { score: this.score, time: this.curTime });
         }, this);
       });
     }
@@ -365,22 +373,21 @@ class Scene1 extends Scene {
 
     this.updateTimer();
 
-    if (this.cursors.left.isDown) {
+    if (this.cursors.left.isDown || this.moveLeft) {
       this.player.setVelocityX(-100);
       this.player.x -= 2.5;
 
       this.player.anims.play('left', true);
-    } else if (this.cursors.right.isDown) {
+    } else if (this.cursors.right.isDown || this.moveRight) {
       this.player.setVelocityX(100);
       this.player.x += 2.5;
-
       this.player.anims.play('right', true);
-    } else if (this.cursors.up.isDown && onLadder === true) {
+    } else if ((this.cursors.up.isDown && onLadder === true) || (this.moveUp && onLadder === true)) {
       this.player.setGravityY(0);
       this.player.setVelocityY(-100);
       this.player.anims.play('climb', true);
       onLadder = false;
-    } else if (this.cursors.down.isDown && onLadder === true) {
+    } else if ((this.cursors.down.isDown && onLadder === true) || (this.moveDown && onLadder === true)) {
       this.player.setGravityY(0);
       this.player.setVelocityY(100);
       this.player.anims.play('climb', true);

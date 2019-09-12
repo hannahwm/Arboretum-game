@@ -1,4 +1,13 @@
 #game-container {
-  width: 800px;
+  width: 320px;
   margin: 200px auto 0;
+
+  @media screen and (min-width: 376px) {
+    width: 400px;
+
+  }
+
+  @media screen and (min-width: 700px) {
+    width: 800px;
+  }
 }
