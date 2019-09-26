@@ -1,5 +1,11 @@
 import Phaser, { Scene } from 'phaser';
 
+const $ = jQuery;
+
+$('.game-share__close').on('click touchstart', () => {
+  $('.game-share').fadeOut();
+});
+
 class WinScreen extends Scene {
   constructor() {
     super('winscreen');
@@ -37,7 +43,7 @@ class WinScreen extends Scene {
     const curTime = curResult;
     const savedTime = bestResult;
 
-    this.bg = this.add.image(0, 0, 'sky');
+    this.bg = this.add.image(0, 0, 'winscreen');
     this.bg.setOrigin(0, 0);
 
     // ========================================================
@@ -47,7 +53,7 @@ class WinScreen extends Scene {
     });
     this.winText.setOrigin(0.5, 0.5);
 
-    this.scoreText = this.add.text(this.width / 2, this.height / 2 + 60, 'Score: 0', {
+    this.scoreText = this.add.text(this.width / 2, this.height / 2 + 90, 'Score: 0', {
       fontFamily: 'Lato, sans-serif', fontSize: '20px', fill: '#333', wordWrap: true, align: 'center',
     });
     this.scoreText.setOrigin(0.5, 0.5).visible = false;
@@ -57,7 +63,7 @@ class WinScreen extends Scene {
     });
     this.highscoreText.setOrigin(0.5, 0.5).visible = false;
 
-    this.timeText = this.add.text(this.width / 2, this.height / 2 + 100, 'Time: 0', {
+    this.timeText = this.add.text(this.width / 2, this.height / 2 + 130, 'Time: 0', {
       fontFamily: 'Lato, sans-serif', fontSize: '20px', fill: '#333', wordWrap: true, align: 'center',
     });
     this.timeText.setOrigin(0.5, 0.5).visible = false;
@@ -67,9 +73,11 @@ class WinScreen extends Scene {
     });
     this.bestTimeText.setOrigin(0.5, 0.5).visible = false;
 
+    this.button = this.add.image(this.width / 2 - 100, this.height / 2 + 200, 'playAgain');
+
     // ========================================================
     // Display the text based on the results
-    if (this.booksNum === 9) {
+    if (this.booksNum === 22) {
       this.winText.setText('Congratulations! You made it to the library and managed to return ALL of your books.');
 
       // only show score and time if all of the books were retrieved
@@ -99,16 +107,27 @@ class WinScreen extends Scene {
         document.cookie = `time= ${this.timeElapsed}`;
       }
       this.star = this.add.image(this.width - 270, 40, 'star');
+      this.button = this.add.image(this.width / 2 - 100, this.height / 2 + 200, 'playAgain');
     } else {
       this.winText.setText(`You made it to the library and managed to return ${this.booksNum} of your books. There are still more books to return though. See if you can get them all next time!`);
+      this.button = this.add.image(this.width / 2 - 100, this.height / 2 + 200, 'tryAgain');
     }
 
-    this.button = this.add.image(this.width / 2, this.height / 2 + 200, 'tryAgain');
-    this.button.setOrigin(0.5, 0.5);
+    this.button.setOrigin(0.5, 0.5).setInteractive();
 
-    this.input.on('pointerdown', () => {
+    this.button.on('pointerdown', () => {
       this.scene.start('scene1');
     });
+
+    this.share = this.add.image(this.width / 2 + 100, this.height / 2 + 200, 'share');
+
+    this.share.setOrigin(0.5, 0.5).setInteractive();
+
+    this.share.on('pointerdown', () => {
+      $('.game-share').fadeIn();
+    });
+
+
   }
 
   getCookie(cname) {

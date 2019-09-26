@@ -1,13 +1,13 @@
 import Phaser, { Scene } from 'phaser';
 
-class Instructions extends Scene {
+class InstructionsTouch extends Scene {
   constructor() {
-    super('instructions');
+    super('instructionstouch');
   }
 
   // this is where data is carried over from the previous level
   init(data) {
-    this.hasTouch = data.touch;
+    this.hasToucn = data.touch;
   }
 
   preload() {
@@ -27,21 +27,21 @@ class Instructions extends Scene {
     });
     loadingText.setOrigin(0.5, 0.5);
 
-    this.load.image('bg', '/interactive/2019/08/phaser-game-controls/assets/instructions-bg.png');
+    this.load.image('bgTouch', '/interactive/2019/08/phaser-game-controls/assets/instructions-touch.png');
   }
 
   create() {
     this.cameras.main.setBackgroundColor('#ade6ff');
 
-    const bg = this.add.image(0, 0, 'bg');
+    const bg = this.add.image(0, 0, 'bgTouch');
     bg.setOrigin(0, 0);
 
-    this.add.text(580, 550, 'Click anywhere to continue', {
+    this.add.text(580, 550, 'Tap anywhere to continue', {
       fontFamily: 'Lato, sans-serif', fontSize: '16px', fill: '#333',
     });
 
-    this.input.on('pointerdown', () => this.scene.start('preload', { touch: this.hasTouch }));
+    this.input.on('pointerdown', () => this.scene.start('preload', { touch: this.hasToucn }));
   }
 }
 
-export default Instructions;
+export default InstructionsTouch;

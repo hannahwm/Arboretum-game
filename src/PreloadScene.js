@@ -6,8 +6,7 @@ class PreloadScene extends Scene {
   }
 
   init(data) {
-    this.isSmall = data.small;
-    this.isMedium = data.medium;
+    this.hasTouch = data.touch;
   }
 
   preload() {
@@ -40,34 +39,45 @@ class PreloadScene extends Scene {
     });
     percentText.setOrigin(0.5, 0.5);
 
-    this.load.image('space', '/interactive/2019/08/phaser-game/assets/space.png');
-    this.load.image('up', '/interactive/2019/08/phaser-game/assets/up.png');
-    this.load.image('down', '/interactive/2019/08/phaser-game/assets/down.png');
-    this.load.image('right', '/interactive/2019/08/phaser-game/assets/right.png');
-    this.load.image('left', '/interactive/2019/08/phaser-game/assets/left.png');
-    this.load.image('sky', 'interactive/2019/08/phaser-game/assets/sky.png');
-    this.load.image('middle', 'interactive/2019/08/phaser-game/assets/middle.png');
-    this.load.image('background', 'interactive/2019/08/phaser-game/assets/background.png');
-    this.load.image('ground', 'interactive/2019/08/phaser-game/assets/ground.png');
-    this.load.image('platform', 'interactive/2019/08/phaser-game/assets/platform.png');
-    this.load.image('ladder', 'interactive/2019/08/phaser-game/assets/ladder.png');
-    this.load.image('goal', 'interactive/2019/08/phaser-game/assets/goal.png');
-    this.load.image('nut', 'interactive/2019/08/phaser-game/assets/nut.png');
-    this.load.image('star', 'interactive/2019/08/phaser-game/assets/star.png');
-    this.load.image('tryAgain', 'interactive/2019/08/phaser-game/assets/try-again.png');
-    this.load.image('books', 'interactive/2019/08/phaser-game/assets/books.png');
+    this.load.image('jump', '/interactive/2019/08/phaser-game-controls/assets/jump.png');
+    this.load.image('up', '/interactive/2019/08/phaser-game-controls/assets/upArr.png');
+    this.load.image('down', '/interactive/2019/08/phaser-game-controls/assets/down.png');
+    this.load.image('right', '/interactive/2019/08/phaser-game-controls/assets/rightArr.png');
+    this.load.image('left', '/interactive/2019/08/phaser-game-controls/assets/leftArr.png');
+    this.load.image('sky', 'interactive/2019/08/phaser-game-controls/assets/sky.png');
+    this.load.image('winscreen', 'interactive/2019/08/phaser-game-controls/assets/win-screen.png');
+    this.load.image('middle', 'interactive/2019/08/phaser-game-controls/assets/middle.png');
+    this.load.image('background', 'interactive/2019/08/phaser-game-controls/assets/background.png');
+    this.load.image('ground', 'interactive/2019/08/phaser-game-controls/assets/ground.png');
+    this.load.image('platform', 'interactive/2019/08/phaser-game-controls/assets/platform.png');
+    this.load.image('ladder', 'interactive/2019/08/phaser-game-controls/assets/ladder.png');
+    this.load.image('goal', 'interactive/2019/08/phaser-game-controls/assets/goal.png');
+    this.load.image('pond', 'interactive/2019/08/phaser-game-controls/assets/pond.png');
+    this.load.image('bridge', 'interactive/2019/08/phaser-game-controls/assets/bridge.png');
+    this.load.image('nut', 'interactive/2019/08/phaser-game-controls/assets/nut.png');
+    this.load.image('star', 'interactive/2019/08/phaser-game-controls/assets/star.png');
+    this.load.image('tryAgain', 'interactive/2019/08/phaser-game-controls/assets/try-again.png');
+    this.load.image('playAgain', 'interactive/2019/08/phaser-game-controls/assets/play-again.png');
+    this.load.image('share', 'interactive/2019/08/phaser-game-controls/assets/share.png');
+    this.load.image('books', 'interactive/2019/08/phaser-game-controls/assets/books.png');
     this.load.spritesheet('dude',
-      'interactive/2019/08/phaser-game/assets/player.png',
+      'interactive/2019/08/phaser-game-controls/assets/player.png',
       { frameWidth: 23, frameHeight: 38 });
     this.load.spritesheet('squirrel',
-      'interactive/2019/08/phaser-game/assets/squirrel.png',
+      'interactive/2019/08/phaser-game-controls/assets/squirrel.png',
       { frameWidth: 43, frameHeight: 48 });
     this.load.spritesheet('pigeon',
-      'interactive/2019/08/phaser-game/assets/pigeon.png',
+      'interactive/2019/08/phaser-game-controls/assets/pigeon.png',
       { frameWidth: 50, frameHeight: 41 });
-    this.load.image('sky2', 'interactive/2019/08/phaser-game/assets/sky2.png');
-    this.load.image('middle2', 'interactive/2019/08/phaser-game/assets/middle2.png');
-    this.load.image('background2', 'interactive/2019/08/phaser-game/assets/background2.png');
+      this.load.spritesheet('boss',
+        'interactive/2019/08/phaser-game-controls/assets/boss.png',
+        { frameWidth: 150, frameHeight: 150 });
+    this.load.image('sky2', 'interactive/2019/08/phaser-game-controls/assets/sky2.png');
+    this.load.image('middle2', 'interactive/2019/08/phaser-game-controls/assets/middle2.png');
+    this.load.image('background2', 'interactive/2019/08/phaser-game-controls/assets/background2.png');
+    // this.load.image('sky3', 'interactive/2019/08/phaser-game-controls/assets/sky3.png');
+    // this.load.image('middle3', 'interactive/2019/08/phaser-game-controls/assets/middle3.png');
+    this.load.image('background3', 'interactive/2019/08/phaser-game-controls/assets/background3.png');
 
     this.load.on('progress', (value) => {
       percentText.setText(parseInt(`${value * 100} %`));
@@ -78,7 +88,7 @@ class PreloadScene extends Scene {
 
     this.load.on('complete', () => {
 
-      this.scene.start('scene1', { small: this.isSmall, medium: this.isMedium });
+      this.scene.start('scene3', { touch: this.hasTouch });
     });
   }
 
@@ -130,6 +140,14 @@ class PreloadScene extends Scene {
       key: 'squirrel',
       frames: this.anims.generateFrameNumbers('squirrel', { start: 1, end: 3 }),
       frameRate: 5,
+      yoyo: true,
+      repeat: -1,
+    });
+
+    this.anims.create({
+      key: 'boss',
+      frames: this.anims.generateFrameNumbers('boss', { start: 1, end: 3 }),
+      frameRate: 3,
       yoyo: true,
       repeat: -1,
     });

@@ -6,7 +6,26 @@
          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
      </head>
      <body>
-        <div id="game-container"></div>
+       <div class="game-share">
+    			<div class="game-share-content">
+    				<button class="game-share__close">close</button>
+    				<h3>Share it!</h3>
+    				<ul class="article-topper__social-list js-share-tools">
+    			    <li class="article-topper__social-item article-topper__social-item--twitter ">
+    						<a class="article-topper__social-link article-topper__social-link--twitter qs-link" data-qs-service="twitter" data-qs-url="https://news.northeastern.edu/?p=86013" data-qs-title="How well do you know Northeastern? Test your knowledge with this interactive game." href="javascript:window.open('https%3A%2F%2Ftwitter.com%2Fintent%2Ftweet%3Furl%3Dhttps%253A%252F%252Fnews.northeastern.edu%252F%253Fp%253D86013%26text%3DHow%2520well%2520do%2520you%2520know%2520Northeastern%253F%2520Test%2520your%2520knowledge%2520with%2520this%2520interactive%2520game.','myTwitterWin','width=620,height=350'); void(0)">Twitter</a>
+                <!-- <a href="https://twitter.com/share?text=body&url=url">Tweet</a> -->
+    			    </li>
+    			    <li class="article-topper__social-item article-topper__social-item--facebook ">
+    						<a class="article-topper__social-link article-topper__social-link--facebook qs-link" data-qs-service="facebook-share" data-qs-url="https://news.northeastern.edu/?p=86013" href="javascript:window.open('https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fnews.northeastern.edu%2F%3Fp%3D86013','myFacebookWin','width=620,height=350'); void(0)">Facebook</a>
+    			    </li>
+    			  </ul>
+    			</div>
+    		</div>
+        <div class="game-wrapper">
+          <h1>Controls version</h1>
+          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam nec hendrerit ligula. Aenean nec feugiat est. Suspendisse hendrerit tortor eget orci dignissim, ac vehicula ante placerat. Quisque feugiat mollis euismod. Integer et leo mollis risus viverra volutpat non nec ligula. Proin malesuada eu elit molestie convallis. Aenean a augue blandit, imperdiet urna id, cursus arcu. Interdum et malesuada fames ac ante ipsum primis in faucibus. Quisque ipsum enim, ultrices at diam sed, fringilla elementum turpis.</p>
+          <div id="game-container"></div>
+        </div>
          <script src="https://huskynunews.wpengine.com/wp-includes/js/jquery/jquery.js?ver=1.12.4" charset="utf-8"></script>
          <script src="build/modernizr-custom.js" charset="utf-8"></script>
          <script src="build/project.bundle.js" charset="utf-8"></script>

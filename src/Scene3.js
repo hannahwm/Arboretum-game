@@ -3,23 +3,28 @@ import gameConfig from './gameConfig';
 
 let onLadder = false;
 
-class Scene1 extends Scene {
+class Scene3 extends Scene {
+
   constructor() {
-    super('scene1'); // key: scene1
+    super('scene3'); // key: scene1
+    this.startTime = new Date();
+    // this.onLadder = false;
+    // this.isClimbing = false;
   }
 
+  // this is where data is carried over from the previous level
   init(data) {
+    this.score = data.score;
+    this.timeElapsed = data.time;
+    this.booksNum = data.books;
     this.hasTouch = data.touch;
   }
 
   create() {
     this.fadeTriggered = false;
     this.gameOver = false;
-    this.score = 0;
-    this.booksNum = 0;
-    this.startTime = new Date();
-    this.timeElapsed = 0;
-    this.curTime = 0;
+    this.curTime = this.timeElapsed;
+
     this.cameras.main.setBackgroundColor('#C9E9F0');
     this.cameras.main.fadeIn(2000, 255, 255, 255);
     this.moveRight = false;
@@ -35,11 +40,12 @@ class Scene1 extends Scene {
     this.createLadders();
     this.createGoal();
     this.createEnemies();
+    this.createPond();
     this.createBooks();
     this.createHealthBar();
+    this.createBossHealth();
     this.createBackground();
     this.createCursor();
-
     if (this.hasTouch) {
       this.createMobileControls();
     }
@@ -52,14 +58,14 @@ class Scene1 extends Scene {
     this.createTimer();
     this.gameTimer = this.time.delayedCall(100, this.updateTimer, [], this);
 
-    this.scoreText = this.add.text(16, 20, 'score: 0', {
+    this.scoreText = this.add.text(16, 20, `score: ${this.score}`, {
       fontFamily: 'Lato, sans-serif', fontSize: '20px', fill: '#000', wordWrap: true, wordWrapWidth: this.player.width, align: 'center',
     });
     this.scoreText.setScrollFactor(0);
   }
 
   createTimer() {
-    this.timeLabel = this.add.text(395, 37, '00:00', {
+    this.timeLabel = this.add.text(395, 37, this.timeElapsed, {
       fontFamily: 'Lato, sans-serif', fontSize: '20px', fill: '#000', wordWrap: true, wordWrapWidth: this.player.width, align: 'center',
     });
     this.timeLabel.setScrollFactor(0);
@@ -95,27 +101,42 @@ class Scene1 extends Scene {
     this.healthBar.setScrollFactor(0);
   }
 
+  createBossHealth() {
+    this.bossHealthRect = this.add.rectangle(1280, 410, 64, 14, '0x000000').setDepth(5);
+    this.bossHealth = this.add.rectangle(1280, 410, 60, 10, '0xcc0000');
+    this.bossHealth.setDepth(6);
+
+    this.bossHealthTween = this.tweens.add({
+      targets: [this.bossHealth, this.bossHealthRect],
+      x: this.bossHealth.x + 100,
+      ease: 'Linear',
+      duration: 2500,
+      yoyo: true,
+      repeat: -1,
+    });
+  }
+
   createBackground() {
-    this.map = this.add.image(0, 0, 'background');
+    this.map = this.add.image(0, 0, 'background3');
     this.map.setDepth(2);
     this.map.setOrigin(0, 0.05);
 
-    this.middle = this.add.image(0, 0, 'middle');
-    this.middle.setDepth(1);
-    this.middle.setOrigin(0, 0.05);
+    // this.middle = this.add.image(0, 0, 'middle');
+    // this.middle.setDepth(1);
+    // this.middle.setOrigin(0, 0.05);
 
-    this.sky = this.add.image(0, 0, 'sky');
+    this.sky = this.add.image(0, 0, 'sky2');
     this.sky.setDepth(0);
     this.sky.setOrigin(0, 0);
 
     const gameWidth = parseFloat(this.map.getBounds().width);
     const windowWidth = gameConfig.width;
     const bgWidth = this.map.getBounds().width;
-    const middleWidth = this.middle.getBounds().width;
+    // const middleWidth = this.middle.getBounds().width;
     const skyWidth = this.sky.getBounds().width;
 
     this.map.setScrollFactor((bgWidth - windowWidth) / (gameWidth - windowWidth));
-    this.middle.setScrollFactor((middleWidth - windowWidth) / (gameWidth - windowWidth));
+    // this.middle.setScrollFactor((middleWidth - windowWidth) / (gameWidth - windowWidth));
     this.sky.setScrollFactor((skyWidth - windowWidth) / (gameWidth - windowWidth));
   }
 
@@ -131,11 +152,13 @@ class Scene1 extends Scene {
   createPlatforms() {
     this.platforms = this.physics.add.staticGroup();
     // platform 1
-    this.platforms.create(540, 480, 'platform');
+    this.platforms.create(340, 490, 'platform');
     // platform 2
-    this.platforms.create(840, 380, 'platform');
+    this.platforms.create(650, 440, 'platform');
     // platform 3
-    this.platforms.create(1140, 460, 'platform');
+    this.platforms.create(1000, 360, 'platform');
+    // platform 4
+    // this.platforms.create(1220, 480, 'platform');
 
     this.platforms.children.iterate((child) => {
       child.setSize(160, 33);
@@ -147,12 +170,13 @@ class Scene1 extends Scene {
 
   createLadders() {
     this.ladders = this.physics.add.staticGroup();
-    this.ladders.create(300, 440, 'ladder');
+    this.ladders.create(1500, 440, 'ladder');
     this.ladders.setDepth(4);
+    this.physics.add.overlap(this.player, this.ladders, this.detectOverlap);
 
     this.ladders.children.iterate((child) => {
-      child.setSize(15, 230);
-      child.setOffset(56, 35);
+      child.setSize(40, 230);
+      child.setOffset(45, 35);
       this.physics.add.overlap(child, this.player, this.detectOverlap, false, this);
     });
   }
@@ -176,33 +200,53 @@ class Scene1 extends Scene {
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.platforms);
     this.physics.add.collider(this.player, this.ground);
+    // this.physics.add.overlap(this.player, this.goal, this.touchGoal, false, this);
+  }
+
+  createPond() {
+    this.pond = this.physics.add.staticGroup();
+    this.pond.create(850, 578, 'pond').setScale(1.2);
+    this.pond.children.iterate((child) => {
+      child.setDepth(4);
+      // child.setSize(200, 20);
+      child.setOffset(-50, 0);
+    });
+
+    this.bridge = this.physics.add.staticGroup();
+    this.bridge.create(850, 578, 'bridge').setScale(1.2);
+    this.bridge.children.iterate((child) => {
+      child.setDepth(7);
+    });
   }
 
   createEnemies() {
-
     this.enemies = this.add.group();
+    this.enemiesReverse = this.add.group();
+    this.enemiesBoss = this.add.group();
 
-    const enemy1 = this.physics.add.sprite(480, 440, 'squirrel').setDepth(5);
-    const enemy2 = this.physics.add.sprite(800, 340, 'squirrel').setDepth(5);
-    const enemy3 = this.physics.add.sprite(1100, 340, 'squirrel').setDepth(5);
+    const enemy1 = this.physics.add.sprite(400, 410, 'squirrel').setDepth(5).setFlipX(true);
+    const enemy2 = this.physics.add.sprite(630, 360, 'squirrel').setDepth(5);
+    const enemy3 = this.physics.add.sprite(980, 300, 'squirrel').setDepth(5);
+    const enemy4 = this.physics.add.sprite(1260, 500, 'boss');
 
 
-    this.enemies.addMultiple([enemy1, enemy2, enemy3], true);
+    this.enemies.addMultiple([enemy2, enemy3], true);
+    this.enemiesReverse.addMultiple([enemy1], true);
+    this.enemiesBoss.addMultiple([enemy4], true);
 
     for (let i = 0; i < this.enemies.children.size; i += 1) {
       const child = this.enemies.children.entries[i];
-      const index = i;
-      child.setDepth(5).setGravityY(300);
+
+      child.setDepth(5).setGravityY(300).setCircle(24, -2, 1);
       child.anims.play('squirrel');
       this.physics.add.collider(this.player, child, this.touchEnemy, null, this);
       this.physics.add.collider(child, this.platforms);
 
       this.squirrelTween = this.tweens.add({
         targets: child,
-        x: child.x + 100,
+        x: child.x + 70,
         ease: 'Power0',
-        duration: 3000,
-        delay: index * 2000,
+        duration: 1000,
         flipX: true,
         yoyo: true,
         repeat: -1,
@@ -211,8 +255,65 @@ class Scene1 extends Scene {
           const curY = child.y;
           this.nut = this.physics.add.image(curX, curY, 'nut');
           this.nut.setBounce(1);
-          this.nut.setDepth(6);
+          this.nut.setDepth(5);
           this.nut.setVelocityY(80).setVelocityX(-350);
+          this.physics.add.collider(this.player, this.nut, this.hitNut, null, this);
+        },
+      });
+    }
+
+    for (let i = 0; i < this.enemiesReverse.children.size; i += 1) {
+      const child = this.enemiesReverse.children.entries[i];
+
+      child.setDepth(5).setGravityY(300).setCircle(24, -2, 1);
+      child.anims.play('squirrel');
+      this.physics.add.collider(this.player, child, this.touchEnemy, null, this);
+      this.physics.add.collider(child, this.platforms);
+
+      this.squirrelTween2 = this.tweens.add({
+        targets: child,
+        x: child.x - 100,
+        ease: 'Power0',
+        duration: 1500,
+        flipX: true,
+        yoyo: true,
+        repeat: -1,
+        onRepeat: () => {
+          const curX = child.x - 20;
+          const curY = child.y;
+          this.nut = this.physics.add.image(curX, curY, 'nut');
+          this.nut.setBounce(1);
+          this.nut.setDepth(5);
+          this.nut.setVelocityY(80).setVelocityX(350);
+          this.physics.add.collider(this.player, this.nut, this.hitNut, null, this);
+        },
+      });
+    }
+
+    for (let i = 0; i < this.enemiesBoss.children.size; i += 1) {
+      const child = this.enemiesBoss.children.entries[i];
+      child.setDepth(6).setSize(110, 145);
+      child.anims.play('boss');
+      this.physics.add.collider(this.player, child, this.touchBoss, null, this);
+      this.physics.add.collider(child, this.ground);
+
+      this.bossTween = this.tweens.add({
+        targets: child,
+        x: child.x + 100,
+        ease: 'Linear',
+        duration: 2500,
+        flipX: true,
+        yoyo: true,
+        repeat: -1,
+        onRepeat: () => {
+          const curX = child.x - 20;
+          const curY = child.y;
+          this.nut = this.physics.add.image(curX, curY, 'nut');
+          this.physics.add.collider(this.nut, this.ground).name = 'nutCollider';
+          // this.nut.setBounce(1);
+          this.nut.setDepth(5).setScale(1.5);
+          this.nut.setVelocityY(80).setVelocityX(-150).setAngularAcceleration(-80);
+          this.physics.add.overlap(this.pond, this.nut, this.hitPond, null, this);
           this.physics.add.collider(this.player, this.nut, this.hitNut, null, this);
         },
       });
@@ -268,31 +369,30 @@ class Scene1 extends Scene {
     this.up.on('pointerout', () => {
       this.moveUp = false;
     }, this);
-
-    // this.down = this.add.image(600, 560, 'down');
-    // this.down.setDepth(6).setInteractive().setScrollFactor(0);
-    // this.down.on('pointerdown', () => {
-    //   this.moveDown = true;
-    // }, this);
-    // this.down.on('pointerup', () => {
-    //   this.moveDown = false;
-    // }, this);
   }
 
   createBooks() {
     this.books = this.physics.add.group({
       key: 'books',
       repeat: 3,
-      setXY: { x: 300, y: 300, stepX: 270 },
+      setXY: { x: 350, y: 160, stepX: 300 },
     });
-
     this.books.children.iterate((child) => {
       child.setDepth(4);
     });
 
+    this.finalBooks = this.physics.add.group();
+    this.finalBooks.create(1280, 440, 'books');
+    this.finalBooks.children.iterate((child) => {
+      child.setDepth(4);
+    });
+
+
     this.physics.add.collider(this.books, this.platforms);
     this.physics.add.collider(this.books, this.ladders);
+    this.physics.add.collider(this.finalBooks, this.ground);
     this.physics.add.overlap(this.player, this.books, this.collectBooks, null, this);
+    this.physics.add.overlap(this.player, this.finalBooks, this.collectFinalBooks, null, this);
   }
 
   collectBooks(player, books) {
@@ -301,6 +401,13 @@ class Scene1 extends Scene {
     this.score += 10;
     this.scoreText.setText(`Score: ${this.score}`);
     this.booksNum += 1;
+  }
+
+  collectFinalBooks(player, finalbooks) {
+    finalbooks.disableBody(true, true);
+    this.score += 100;
+    this.scoreText.setText(`Score: ${this.score}`);
+    this.booksNum += 10;
   }
 
   createJumpButton() {
@@ -321,6 +428,17 @@ class Scene1 extends Scene {
         player.clearTint();
       }
     }, 200);
+  }
+
+  hitPond(nut) {
+    nut.setVelocityX(-50);
+    nut.setGravityY(100);
+    this.physics.world.colliders.remove(this.physics.world.colliders.getActive().find((i) => {
+      return i.name === 'nutCollider';
+    }));
+    setTimeout(() => {
+      nut.destroy();
+    }, 300);
   }
 
   detectOverlap() {
@@ -358,12 +476,43 @@ class Scene1 extends Scene {
     }
   }
 
+  touchBoss(player, boss) {
+    const curWidth = this.bossHealth.displayWidth;
+// player.y < (this.ground.y - (boss.displayHeight - player.height))
+    if (boss.body.touching.up && player.body.touching.down) {
+      player.y -= 50;
+
+      setTimeout(() => {
+        if (curWidth === 20) {
+          boss.body.velocity.x = 0;
+          boss.y += 200;
+          this.bossHealth.y += 200;
+          this.bossHealthRect.y += 200;
+          this.tweens.killTweensOf(boss);
+          this.score += 500;
+          this.scoreText.setText(`Score: ${this.score}`);
+        } else {
+          this.bossHealth.setSize(curWidth - 20, 12);
+          // if (player.currentAnim.key === right) {
+          //   player.x += 100;
+          //   player.setVelocityX(1 50)
+          // } else {
+          //   player.x -= 100;
+          //   player.setVelocityX(-150)
+          // }
+        }
+      }, 200);
+    } else {
+      this.callGameOver(player);
+    }
+  }
+
   touchGoal() {
     if (!this.fadeTriggered) {
       this.fadeTriggered = true;
       this.cameras.main.fadeOut(1000, 255, 255, 255, () => {
         this.cameras.main.on('camerafadeoutcomplete', () => {
-          this.scene.start('scene2', { score: this.score, time: this.timeElapsed, books: this.booksNum, touch: this.hasTouch });
+          this.scene.start('winscreen', { score: this.score, time: this.timeElapsed, books: this.booksNum });
         }, this);
       });
     }
@@ -443,4 +592,4 @@ class Scene1 extends Scene {
   }
 }
 
-export default Scene1;
+export default Scene3;

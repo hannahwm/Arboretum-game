@@ -1,36 +1,39 @@
 import Phaser, { Scene } from 'phaser';
 
+let hasTouch;
+window.addEventListener('touchstart', function setHasTouch() {
+  hasTouch = true;
+  // Remove event listener once fired, otherwise it'll kill scrolling
+  // performance
+  window.removeEventListener('touchstart', setHasTouch);
+}, false);
+
 class StartScreen extends Scene {
   constructor() {
     super('startscreen');
   }
 
   preload() {
-    this.load.image('screen', '/interactive/2019/08/phaser-game/assets/title-screen.png');
+    this.load.image('screen', '/interactive/2019/08/phaser-game-controls/assets/title-screen.png');
+    this.load.image('play', '/interactive/2019/08/phaser-game-controls/assets/play.png');
   }
 
   create() {
-    this.width = this.cameras.main.width;
-    this.isSmall = false;
-    this.isMedium = false;
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
 
-    if (this.width < 376) {
-      this.isSmall = true;
-    } else if (this.width < 700) {
-      this.isMedium = true;
-    }
-    if (this.isSmall) {
-      const screen = this.add.image(0, 0, 'screen').setScale(0.4);
-      screen.setOrigin(0, 0);
-    } else if (this.isMedium) {
-      const screen = this.add.image(0, 0, 'screen').setScale(0.5);
-      screen.setOrigin(0, 0);
-    } else {
-      const screen = this.add.image(0, 0, 'screen');
-      screen.setOrigin(0, 0);
-    }
+    const screen = this.add.image(0, 0, 'screen');
+    screen.setOrigin(0, 0);
 
-    this.input.on('pointerdown', () => this.scene.start('instructions', { small: this.isSmall, medium: this.isMedium }));
+    this.button = this.add.image(width / 2, height * 0.6, 'play');
+    this.button.setDepth(6).setInteractive();
+    this.button.on('pointerup', () => {
+      if (hasTouch === true) {
+        this.scene.start('instructionstouch', { touch: hasTouch });
+      } else {
+        this.scene.start('instructions', { touch: hasTouch });
+      }
+    });
   }
 }
 

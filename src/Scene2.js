@@ -17,6 +17,7 @@ class Scene2 extends Scene {
     this.score = data.score;
     this.timeElapsed = data.time;
     this.booksNum = data.books;
+    this.hasTouch = data.touch;
   }
 
   create() {
@@ -26,6 +27,12 @@ class Scene2 extends Scene {
 
     this.cameras.main.setBackgroundColor('#C9E9F0');
     this.cameras.main.fadeIn(2000, 255, 255, 255);
+    this.moveRight = false;
+    this.moveLeft = false;
+    this.moveUp = false;
+    this.moveDown = false;
+    this.isSwiping = false;
+    this.pointerDown = false;
 
     this.createGround();
     this.createPlatforms();
@@ -37,6 +44,9 @@ class Scene2 extends Scene {
     this.createHealthBar();
     this.createBackground();
     this.createCursor();
+    if (this.hasTouch) {
+      this.createMobileControls();
+    }
     this.createJumpButton();
     this.cameras.main.setBounds(0, 0, this.map.width, this.map.height);
     this.physics.world.setBounds(0, 0, this.map.getBounds().width,
@@ -270,6 +280,62 @@ class Scene2 extends Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
   }
 
+  createMobileControls() {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    this.space = this.add.image(width * 0.9, height * 0.9, 'jump');
+    this.space.setDepth(6).setInteractive().setScrollFactor(0);
+    this.space.on('pointerdown', () => {
+      this.player.setVelocityY(-355);
+    });
+
+    this.right = this.add.image(180, height * 0.9, 'right');
+    this.right.setDepth(6).setInteractive().setScrollFactor(0);
+    this.right.on('pointerdown', () => {
+      this.moveRight = true;
+    }, this);
+    this.right.on('pointerup', () => {
+      this.moveRight = false;
+    }, this);
+    this.right.on('pointerout', () => {
+      this.moveRight = false;
+    }, this);
+
+    this.left = this.add.image(50, height * 0.9, 'left');
+    this.left.setDepth(6).setInteractive().setScrollFactor(0);
+    this.left.on('pointerdown', () => {
+      this.moveLeft = true;
+    }, this);
+    this.left.on('pointerup', () => {
+      this.moveLeft = false;
+    }, this);
+    this.left.on('pointerout', () => {
+      this.moveLeft = false;
+    }, this);
+
+    this.up = this.add.image(115, height * 0.77, 'up');
+    this.up.setDepth(6).setInteractive().setScrollFactor(0);
+    this.up.on('pointerdown', () => {
+      this.moveUp = true;
+    }, this);
+    this.up.on('pointerup', () => {
+      this.moveUp = false;
+    }, this);
+    this.up.on('pointerout', () => {
+      this.moveUp = false;
+    }, this);
+
+    // this.down = this.add.image(600, 560, 'down');
+    // this.down.setDepth(6).setInteractive().setScrollFactor(0);
+    // this.down.on('pointerdown', () => {
+    //   this.moveDown = true;
+    // }, this);
+    // this.down.on('pointerup', () => {
+    //   this.moveDown = false;
+    // }, this);
+  }
+
   createBooks() {
     this.books = this.physics.add.group({
       key: 'books',
@@ -304,16 +370,17 @@ class Scene2 extends Scene {
     this.jumpButton = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
   }
 
-  hitNut(player) {
+  hitNut(player, nut) {
     const curWidth = this.healthBar.displayWidth;
     player.setTint(0xff0000);
     this.cameras.main.shake(100, 0.01);
+    nut.destroy();
 
     setTimeout(() => {
-      if (curWidth === 40) {
+      if (curWidth === 20) {
         this.callGameOver(player);
       } else {
-        this.healthBar.setSize(curWidth - 40, 20);
+        this.healthBar.setSize(curWidth - 20, 20);
         player.clearTint();
       }
     }, 200);
@@ -324,20 +391,33 @@ class Scene2 extends Scene {
   }
 
   touchEnemy(player, enemy) {
-    if (player.y < (enemy.y - (enemy.displayHeight - 10))) {
+    if (enemy.body.touching.up && player.body.touching.down) {
       enemy.body.velocity.x = 0;
-      if (enemy.anims.currentAnim.key === "pigeon") {
-        enemy.y += 150;
-      } else {
-        enemy.y += 50;
-      }
+      enemy.y += 50;
       this.tweens.killTweensOf(enemy);
       // enemy.destroy();
       player.y -= 30;
-      this.score += 150;
+      this.score += 100;
       this.scoreText.setText(`Score: ${this.score}`);
     } else {
-      this.callGameOver(player);
+      const curWidth = this.healthBar.displayWidth;
+      player.setTint(0xff0000);
+      this.cameras.main.shake(100, 0.01);
+
+      setTimeout(() => {
+        if (curWidth <= 40) {
+          this.callGameOver(player);
+        } else {
+          this.healthBar.setSize(curWidth - 40, 20);
+          player.clearTint();
+        }
+      }, 200);
+
+      if (player.x < enemy.x) {
+        player.x -= 30;
+      } else {
+        player.x += 30;
+      }
     }
   }
 
@@ -346,7 +426,7 @@ class Scene2 extends Scene {
       this.fadeTriggered = true;
       this.cameras.main.fadeOut(1000, 255, 255, 255, () => {
         this.cameras.main.on('camerafadeoutcomplete', () => {
-          this.scene.start('winscreen', { score: this.score, time: this.timeElapsed, books: this.booksNum });
+          this.scene.start('scene3', { score: this.score, time: this.timeElapsed, books: this.booksNum });
         }, this);
       });
     }
@@ -380,30 +460,32 @@ class Scene2 extends Scene {
 
     this.updateTimer();
 
-    if (this.cursors.left.isDown) {
+    if (this.cursors.left.isDown || this.moveLeft) {
       this.player.setVelocityX(-100);
       this.player.x -= 2.5;
 
       this.player.anims.play('left', true);
-    } else if (this.cursors.right.isDown) {
+    } else if (this.cursors.right.isDown || this.moveRight) {
       this.player.setVelocityX(100);
       this.player.x += 2.5;
-
       this.player.anims.play('right', true);
-    } else if (this.cursors.up.isDown && onLadder === true) {
+    } else if ((this.cursors.up.isDown && onLadder === true) || (this.moveUp && onLadder === true)) {
       this.player.setGravityY(0);
       this.player.setVelocityY(-100);
       this.player.anims.play('climb', true);
       onLadder = false;
-    } else if (this.cursors.down.isDown && onLadder === true) {
+    } else if ((this.cursors.down.isDown && onLadder === true) || (this.moveDown && onLadder === true)) {
       this.player.setGravityY(0);
       this.player.setVelocityY(100);
       this.player.anims.play('climb', true);
       onLadder = false;
     } else {
-      this.player.anims.play('turn');
-      this.player.setGravityY(300);
-      this.player.setVelocityX(0);
+      if (this.isSwiping === false && (this.player.body.onFloor() || this.player.body.touching.down)) {
+        this.player.anims.play('turn');
+        this.player.setVelocityX(0);
+      } else {
+        this.player.setGravityY(300);
+      }
     }
 
     if (this.jumpButton.isDown && (this.player.body.onFloor() || this.player.body.touching.down)) {
