@@ -59,6 +59,7 @@ class PreloadScene extends Scene {
     this.load.image('tryAgain', 'interactive/2019/08/phaser-game-controls/assets/try-again.png');
     this.load.image('playAgain', 'interactive/2019/08/phaser-game-controls/assets/play-again.png');
     this.load.image('share', 'interactive/2019/08/phaser-game-controls/assets/share.png');
+    this.load.image('continue', 'interactive/2019/08/phaser-game-controls/assets/continue.png');
     this.load.image('books', 'interactive/2019/08/phaser-game-controls/assets/books.png');
     this.load.spritesheet('dude',
       'interactive/2019/08/phaser-game-controls/assets/player.png',

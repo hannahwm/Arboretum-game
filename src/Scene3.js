@@ -2,6 +2,7 @@ import Phaser, { Scene } from 'phaser';
 import gameConfig from './gameConfig';
 
 let onLadder = false;
+let hitBoss = false;
 
 class Scene3 extends Scene {
 
@@ -191,6 +192,9 @@ class Scene3 extends Scene {
 
   createPlayer() {
     this.player = this.physics.add.sprite(100, 500, 'dude');
+    if (this.hasTouch) {
+      this.player.x = 250;
+    }
     this.player.setSize(18, 34);
     this.player.setOffset(2, 4);
     this.player.setScale(1.5);
@@ -237,7 +241,7 @@ class Scene3 extends Scene {
     for (let i = 0; i < this.enemies.children.size; i += 1) {
       const child = this.enemies.children.entries[i];
 
-      child.setDepth(5).setGravityY(300).setCircle(24, -2, 1);
+      child.setDepth(5).setGravityY(300).setSize(26, 45);
       child.anims.play('squirrel');
       this.physics.add.collider(this.player, child, this.touchEnemy, null, this);
       this.physics.add.collider(child, this.platforms);
@@ -265,7 +269,7 @@ class Scene3 extends Scene {
     for (let i = 0; i < this.enemiesReverse.children.size; i += 1) {
       const child = this.enemiesReverse.children.entries[i];
 
-      child.setDepth(5).setGravityY(300).setCircle(24, -2, 1);
+      child.setDepth(5).setGravityY(300).setSize(26, 45);
       child.anims.play('squirrel');
       this.physics.add.collider(this.player, child, this.touchEnemy, null, this);
       this.physics.add.collider(child, this.platforms);
@@ -312,7 +316,7 @@ class Scene3 extends Scene {
           this.physics.add.collider(this.nut, this.ground).name = 'nutCollider';
           // this.nut.setBounce(1);
           this.nut.setDepth(5).setScale(1.5);
-          this.nut.setVelocityY(80).setVelocityX(-150).setAngularAcceleration(-80);
+          this.nut.setVelocityY(80).setVelocityX(-150).setAngularAcceleration(-500);
           this.physics.add.overlap(this.pond, this.nut, this.hitPond, null, this);
           this.physics.add.collider(this.player, this.nut, this.hitNut, null, this);
         },
@@ -478,30 +482,54 @@ class Scene3 extends Scene {
 
   touchBoss(player, boss) {
     const curWidth = this.bossHealth.displayWidth;
-// player.y < (this.ground.y - (boss.displayHeight - player.height))
-    if (boss.body.touching.up && player.body.touching.down) {
-      player.y -= 50;
 
-      setTimeout(() => {
+    if (boss.body.touching.up && player.body.touching.down) {
+      player.y -= 100;
+      if (hitBoss === false) {
+        hitBoss = true;
+        boss.setTint(0xff0000);
+        boss.body.velocity.x = 0;
+
+        if (boss.anims.forward === false) {
+
+          // block.x = player.x + 100;
+          // block.y = player.y - 100;
+          // this.physics.moveToObject(player, block, 200);
+          player.x += 100;
+          // player.y -= 100;
+          // this.player.setVelocityX(100);
+          // player.body.velocity.x = 300;
+          // this.player.setVelocityY(-100);
+        } else {
+          player.x -= 100;
+          // boss.x += 30;
+          // this.player.body.velocity.y = -150;
+          // this.player.body.velocity.x = -150;
+          // this.player.setVelocityX(+150);
+          // this.player.setVelocityY(+150);
+          // player.body.velocity.x = -300;
+          // player.setVelocityX(-150)
+        }
+
         if (curWidth === 20) {
-          boss.body.velocity.x = 0;
-          boss.y += 200;
+          // boss.body.velocity.x = 0;
+          boss.y += 50;
           this.bossHealth.y += 200;
           this.bossHealthRect.y += 200;
           this.tweens.killTweensOf(boss);
           this.score += 500;
           this.scoreText.setText(`Score: ${this.score}`);
         } else {
-          this.bossHealth.setSize(curWidth - 20, 12);
-          // if (player.currentAnim.key === right) {
-          //   player.x += 100;
-          //   player.setVelocityX(1 50)
-          // } else {
-          //   player.x -= 100;
-          //   player.setVelocityX(-150)
-          // }
+          this.bossHealth.setSize(curWidth - 20, 10);
         }
-      }, 200);
+      }
+
+      setTimeout(() => {
+        hitBoss = false;
+        boss.clearTint();
+      }, 1000);
+
+
     } else {
       this.callGameOver(player);
     }

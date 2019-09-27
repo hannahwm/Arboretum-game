@@ -167,6 +167,9 @@ class Scene1 extends Scene {
 
   createPlayer() {
     this.player = this.physics.add.sprite(100, 500, 'dude');
+    if (this.hasTouch) {
+      this.player.x = 400;
+    }
     this.player.setSize(18, 34);
     this.player.setOffset(2, 4);
     this.player.setScale(1.5);

@@ -39,7 +39,7 @@ const gameConfig = {
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   // StartSceen, Instructions, InstructionsTouch, PreloadScene,
-  scene: [PreloadScene, Scene1, Scene2, Scene3, GameOverScreen, WinScreen],
+  scene: [StartSceen, Instructions, InstructionsTouch, PreloadScene, Scene1, Scene2, Scene3, GameOverScreen, WinScreen],
   physics: {
     default: 'arcade',
     arcade: {

@@ -174,6 +174,9 @@ class Scene2 extends Scene {
 
   createPlayer() {
     this.player = this.physics.add.sprite(100, 500, 'dude');
+    if (this.hasTouch) {
+      this.player.x = 300;
+    }
     this.player.setSize(18, 34);
     this.player.setOffset(2, 4);
     this.player.setScale(1.5);
@@ -205,7 +208,7 @@ class Scene2 extends Scene {
     for (let i = 0; i < this.enemies.children.size; i += 1) {
       const child = this.enemies.children.entries[i];
 
-      child.setDepth(5).setGravityY(300).setCircle(24, -2, 1);
+      child.setDepth(5).setGravityY(300).setSize(26, 45);
       child.anims.play('squirrel');
       this.physics.add.collider(this.player, child, this.touchEnemy, null, this);
       this.physics.add.collider(child, this.platforms);
@@ -233,7 +236,7 @@ class Scene2 extends Scene {
     for (let i = 0; i < this.enemiesReverse.children.size; i += 1) {
       const child = this.enemiesReverse.children.entries[i];
 
-      child.setDepth(5).setGravityY(300).setCircle(24, -2, 1);
+      child.setDepth(5).setGravityY(300).setSize(26, 45);
       child.anims.play('squirrel');
       this.physics.add.collider(this.player, child, this.touchEnemy, null, this);
       this.physics.add.collider(child, this.platforms);
@@ -393,7 +396,11 @@ class Scene2 extends Scene {
   touchEnemy(player, enemy) {
     if (enemy.body.touching.up && player.body.touching.down) {
       enemy.body.velocity.x = 0;
-      enemy.y += 50;
+      if (enemy.anims.currentAnim.key === 'pigeon') {
+       enemy.y += 100;
+     } else {
+       enemy.y += 50;
+     }
       this.tweens.killTweensOf(enemy);
       // enemy.destroy();
       player.y -= 30;

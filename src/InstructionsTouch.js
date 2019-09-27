@@ -36,11 +36,16 @@ class InstructionsTouch extends Scene {
     const bg = this.add.image(0, 0, 'bgTouch');
     bg.setOrigin(0, 0);
 
-    this.add.text(580, 550, 'Tap anywhere to continue', {
-      fontFamily: 'Lato, sans-serif', fontSize: '16px', fill: '#333',
-    });
+    // this.button = this.add.text(580, 550, 'Tap anywhere to continue', {
+    //   fontFamily: 'Lato, sans-serif', fontSize: '16px', fill: '#333',
+    // });
 
-    this.input.on('pointerdown', () => this.scene.start('preload', { touch: this.hasToucn }));
+    this.button = this.add.image(580, 550, 'continue');
+    this.button.setDepth(6).setInteractive();
+
+    this.button.on('pointerup', () => this.scene.start('preload', { touch: this.hasToucn }));
+
+    // this.input.on('pointerdown', () => this.scene.start('preload', { touch: this.hasToucn }));
   }
 }
 
